@@ -3,8 +3,8 @@
 - hosts: pi
   vars:
     user: pi
-    repo_url: git://github.com/HumanDynamics/OpenBadge.git
-    dest_location: /home/{{user}}/OpenBadge
+    repo_url: git://github.com/HumanDynamics/openbadge-hub-py.git
+    dest_location: /home/{{user}}/openbadge-hub-py
   remote_user: pi
   tasks:
   - name: Installing System Packages
@@ -22,3 +22,8 @@
   - name: installing PIP Packages
     pip: requirements={{dest_location}}/requirements.txt
     become: true
+
+  - name: Placing config file
+    template:
+        src=/etc/ansible/openbadge-hub-py/.env
+        dest=/home/{{user}}/openbadge-hub-py/.env
