@@ -12,3 +12,6 @@ scan.txt
 log_proximity.txt
 log_audio.txt
 *.log
+
+# Ansible
+main.retry
