@@ -13,6 +13,7 @@
       - git
       - libglib2.0-dev # From bluepy
       - python-pip # From bluepy
+      - supervisor # for running the processes as deamons
     become: true
 
   - name: Downloading git repo
@@ -27,3 +28,16 @@
     template:
         src=/etc/ansible/openbadge-hub-py/.env
         dest=/home/{{user}}/openbadge-hub-py/.env
+
+  - name: Placing supervisord file for ip reporting
+    template:
+        src=report_ip.conf
+        dest=/etc/supervisor/conf.d/report_ip.conf
+    become: true
+
+  - name: restart supervisor
+    service:
+      name: supervisor
+      state: restarted
+    become: true
+
