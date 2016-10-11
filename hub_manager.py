@@ -48,6 +48,8 @@ def send_hub_ip():
         if response.ok is False:
             raise Exception('Server sent a {} status code instead of 200: {}'.format(response.status_code,
                                                                                          response.text))
+        else:
+            logger.debug("Done")
     except Exception as e:
         logger.error('Error sending updated badge into to server: {}'.format(e))
 
@@ -65,5 +67,5 @@ if __name__ == "__main__":
     register_hub()
     logging.basicConfig()
     logger = logging.getLogger('badge_server')
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     sending_loop()
