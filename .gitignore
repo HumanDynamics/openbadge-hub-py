@@ -1,8 +1,14 @@
 *.py[co]
+
+#
+.idea
+
+# configuration
 device_macs*
+.env
+
+# temp files and logs
 scan.txt
 log_proximity.txt
 log_audio.txt
-data.db
 *.log
-.env
