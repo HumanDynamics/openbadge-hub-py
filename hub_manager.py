@@ -1,14 +1,18 @@
+#!/usr/bin/env python
+
 from __future__ import absolute_import, division, print_function
 import socket
 import requests
 import logging
 import traceback
+import time
 
 from json import load
 from urllib2 import urlopen
 from server import HUB_ENDPOINT, HUB_ENDPOINT
 from urllib import quote_plus
 
+SLEEP_WAIT_SEC = 60 # 1 minute
 
 def register_hub():
     """
@@ -47,9 +51,19 @@ def send_hub_ip():
     except Exception as e:
         logger.error('Error sending updated badge into to server: {}'.format(e))
 
+
+def sending_loop():
+    """
+    Continuously send update IP
+    :return:
+    """
+    while True:
+        send_hub_ip()
+        time.sleep(SLEEP_WAIT_SEC)
+
 if __name__ == "__main__":
     register_hub()
     logging.basicConfig()
     logger = logging.getLogger('badge_server')
     logger.setLevel(logging.DEBUG)
-    send_hub_ip()
+    sending_loop()
