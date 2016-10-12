@@ -14,6 +14,7 @@
       - libglib2.0-dev # From bluepy
       - python-pip # From bluepy
       - supervisor # for running the processes as deamons
+      - links2 # useful when setting up a device
     become: true
 
   - name: Downloading git repo
