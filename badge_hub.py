@@ -170,7 +170,7 @@ def dialogue(bdg, activate_audio, activate_proximity):
 
 
 def scan_for_devices(devices_whitelist):
-    bd = BadgeDiscoverer()
+    bd = BadgeDiscoverer(logger)
     try:
         all_devices = bd.discover(scan_duration=SCAN_DURATION)
     except Exception as e: # catch *all* exceptions
@@ -263,7 +263,10 @@ def devices_scanner(mgr):
                 mac = device['mac']
                 scan_date = device['device_info']['scan_date']
                 rssi = device['device_info']['rssi']
-                voltage = device['device_info']['adv_payload']['voltage']
+                if device['device_info']['adv_payload']:
+                    voltage = device['device_info']['adv_payload']['voltage']
+                else:
+                    voltage = 0.0
                 logger.debug("{},{},{:.2f},{:.2f}".format(scan_date, mac, rssi, voltage))
                 fout.write("{},{},{:.2f},{:.2f}\n".format(scan_date, mac, rssi, voltage))
         time.sleep(5)  # give time to Ctrl-C
