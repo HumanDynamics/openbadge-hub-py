@@ -36,6 +36,12 @@
         dest=/etc/supervisor/conf.d/report_ip.conf
     become: true
 
+  - name: Placing supervisord file for starting pulling data
+    template:
+        src=badge_hub.conf
+        dest=/etc/supervisor/conf.d/badge_hub.conf
+    become: true
+
   - name: restart supervisor
     service:
       name: supervisor
