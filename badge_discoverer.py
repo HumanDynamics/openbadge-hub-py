@@ -6,6 +6,7 @@ import itertools
 import datetime
 import time
 import struct
+import traceback
 from bluepy import btle
 
 
@@ -21,8 +22,8 @@ class BadgeDiscoverer:
     CUSTOM_DATA_LEN = 14 # length of badge custom data adv
     MAC_LENGTH = 6 # length of a MAC address
 
-    def __init__(self):
-        pass
+    def __init__(self,logger):
+        self.logger = logger
 
     def discover(self, scan_duration = 1): #seconds
         btle.Debugging = False
@@ -33,18 +34,22 @@ class BadgeDiscoverer:
         for scan_item in raw_devices:
             device_name = None
             for (sdid, desc, val) in scan_item.getScanData():
-                if sdid  == self.DEVICE_NAME_FIELD_ID: device_name = val
+                if sdid == self.DEVICE_NAME_FIELD_ID: device_name = val
 
             if device_name == self.DEVICE_NAME:
-                rssi = scan_item.rssi
-                mac = scan_item.addr.upper()
-                scan_date = datetime.datetime.now()
-                adv_payload = self.unpack_broadcast_data(scan_item.rawData)
-                if not (mac in scan_items):
-                    scan_items[mac] = {'scan_date':scan_date,'rssi':rssi,'adv_payload':adv_payload}
-                else:
-                    scan_items[mac]['rssi']=rssi
-                    scan_items[mac]['scan_date'] = scan_date
+                try:
+                    rssi = scan_item.rssi
+                    mac = scan_item.addr.upper()
+                    scan_date = datetime.datetime.now()
+                    adv_payload = self.unpack_broadcast_data(scan_item.rawData)
+                    if not (mac in scan_items):
+                        scan_items[mac] = {'scan_date':scan_date,'rssi':rssi,'adv_payload':adv_payload}
+                    else:
+                        scan_items[mac]['rssi']=rssi
+                        scan_items[mac]['scan_date'] = scan_date
+                except Exception as e:
+                    s = traceback.format_exc()
+                    self.logger.error("unexpected failure during scan, {} ,{}".format(e, s))
 
         return scan_items
 
@@ -118,18 +123,13 @@ class ScanDummy(btle.DefaultDelegate):
         pass
 
 if __name__ == "__main__":
+    import logging
+    logging.basicConfig()
+    logger = logging.getLogger('badge_server')
+    logger.setLevel(logging.INFO)
+
     bd = BadgeDiscoverer()
 
     devices = bd.discover()
     for device in devices:
         print(device,devices[device])
-
-    '''
-    str = "0609424144474502010605030F1801000BFF00FF19CA0E4000000303"
-    hexData = str.decode("hex")
-    import array
-
-    strAsBytes = array.array('B', hexData)
-    a = bd.unpackBroadcastData(strAsBytes);
-    print(a);
-    '''
