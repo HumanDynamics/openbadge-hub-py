@@ -274,13 +274,30 @@ def devices_scanner(mgr):
 
 def start_all_devices(mgr):
     logger.info('Starting all badges recording.')
-    mgr.pull_badges_list()
-    for mac in mgr.badges:
-        bdg = mgr.badges.get(mac)
-        bdg.start_recording()
-        time.sleep(2)  # requires sleep between devices
 
-    time.sleep(2)  # allow BLE time to disconnect
+    while True:
+        mgr.pull_badges_list()
+
+        logger.info("Scanning for devices...")
+        scanned_devices = scan_for_devices(mgr.badges.keys())
+        for device in scanned_devices:
+            dev_info = device['device_info']
+            if dev_info ['adv_payload']:
+                sync = dev_info ['adv_payload']['sync_status']
+                audio = dev_info ['adv_payload']['audio_status']
+                proximity = dev_info ['adv_payload']['proximity_status']
+
+                if sync == 0 or audio == 0 or proximity == 0:
+                    logger.info("Starting {}".format(device['mac']))
+                    bdg = mgr.badges.get(device['mac'])
+                    bdg.start_recording()
+                    time.sleep(2)  # requires sleep between devices
+
+                else:
+                    logger.info("No need to start {}".format(device['mac']))
+
+
+        time.sleep(2)  # allow BLE time to disconnect
 
 
 def add_pull_command_options(subparsers):
