@@ -15,11 +15,14 @@ from badge import *
 from badge_discoverer import BadgeDiscoverer
 from badge_manager_server import BadgeManagerServer
 from badge_manager_standalone import BadgeManagerStandalone
+import hub_manager 
 
 log_file_name = 'server.log'
 scans_file_name = 'scan.txt'
-audio_file_name = 'log_audio.txt'
-proximity_file_name = 'log_proximity.txt'
+audio_file_name = 'data/log_audio_pending.txt'
+audio_archive_file_name = 'data/log_audio_archive.txt'
+proximity_file_name = 'data/log_proximity_pending.txt'
+proximity_archive_file_name = 'data/log_proximity_archive.txt'
 
 SCAN_DURATION = 3  # seconds
 
@@ -74,6 +77,38 @@ def get_devices(device_file="device_macs.txt"):
 def round_float_for_log(x):
     return float("{0:.3f}".format(x))
 
+def offload_data():
+    """
+    Send pending files to server and move pending to archive
+    """
+    files = [(audio_file_name, audio_archive_file_name), 
+             (proximity_file_name, proximity_archive_file_name)]
+
+    #NOTE do we want to optimize for memory or speed?
+    # probably speed right now
+    for pending_file_name, archive_file_name in files:
+        chunks = []
+        with open(pending_file_name, "r") as pending_file:
+            #NOTE how many chunks can we fit in memory?
+            # do we need to do anything to safeguard this?
+            #NOTE file of size 140MB crashed w MemoryError
+            for line in pending_file:
+                chunks.append(json.loads(line))
+        if len(chunks) == 0:
+            # No pending data to be sent
+            continue
+        # real quick grab the data type from the first data entry
+        data_type = "audio" if "audio" in chunks[0]["type"] else "proximity"
+        success = hub_manager.send_data_to_server(logger, data_type, chunks)
+        if success:
+            logger.info("Successfully wrote {} data entries to server".format(len(chunks)))
+            # write to archive and erase pending file
+            with open(archive_file_name, "a") as archive_file:
+                for chunk in chunks:
+                    archive_file.write(json.dumps(chunk) + "\n")
+            open(pending_file_name, "w").close()
+        #TODO what do on failure? 
+        # retry?
 
 def dialogue(bdg, activate_audio, activate_proximity):
     """
@@ -246,7 +281,8 @@ def pull_devices(mgr, start_recording):
 
     while True:
         mgr.pull_badges_list()
-
+        logger.info("Attempting to offload data to server")
+        offload_data()
         logger.info("Scanning for devices...")
         scanned_devices = scan_for_devices(mgr.badges.keys())
 
@@ -296,7 +332,6 @@ def devices_scanner(mgr):
 
 def start_all_devices(mgr):
     logger.info('Starting all badges recording.')
-
     while True:
         mgr.pull_badges_list()
 

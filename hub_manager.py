@@ -7,9 +7,10 @@ import logging
 import traceback
 import time
 
-from json import load
+import settings
+import json
 from urllib2 import urlopen
-from server import HUB_ENDPOINT, HUBS_ENDPOINT
+from server import HUB_ENDPOINT, HUBS_ENDPOINT, PROJECTS_ENDPOINT, DATA_ENDPOINT
 from urllib import quote_plus
 
 SLEEP_WAIT_SEC = 60 # 1 minute
@@ -31,7 +32,7 @@ def send_hub_ip():
     hostname = socket.gethostname()
     encoded_hostname = quote_plus(hostname)
     try:
-        my_ip = load(urlopen('http://jsonip.com'))['ip']
+        my_ip = json.load(urlopen('http://jsonip.com'))['ip']
     except Exception as e:
         s = traceback.format_exc()
         logger.error('Error getting IP: {} {}'.format(e,s))
@@ -100,6 +101,47 @@ def _read_hubs_list_from_server(logger, retry=True, retry_delay_sec=5):
 def pull_hubs_list(logger):
     server_hubs = _read_hubs_list_from_server(logger, retry=False)
     return server_hubs
+
+def _get_project_id(logger):
+    headers = {
+        "X-HUB-UUID": socket.gethostname(),
+        "X-APPKEY": settings.APPKEY
+    }
+    
+    resp = requests.request("GET", PROJECTS_ENDPOINT, headers=headers)
+    if resp.status_code == 200:
+        return resp.json()["key"]
+    else:
+        #TODO what do
+        #I don't think this is likely to ever happen, at least
+        logger.error("Error getting project key from server, status code: {}"
+            .format(resp.status_code))
+
+def send_data_to_server(logger, data_type, data):
+    # need to get the project id this hub is associated with
+    project_id = _get_project_id(logger)
+    headers = {
+        "content-type": "application/json",
+        "X-HUB-UUID": socket.gethostname(),
+        "X-APPKEY": settings.APPKEY
+    }
+    payload = {
+        "data_type": data_type,
+        "chunks": data
+    }
+    url = DATA_ENDPOINT(project_id) 
+    response = requests.request("POST", url, data=json.dumps(payload), headers=headers)
+    if response.status_code == 200:
+        assert response.json()["chunks_written"] == response.json()["chunks_received"], \
+                "Chunks written and chunks received are not the same"
+        assert response.json()["chunks_written"] == len(data), \
+                 "Not all of the data sent was written"
+        return True
+    else:
+        logger.error("Error posting data to server")
+        logger.error("Response code: {}".format(response.status_code))
+        logger.error("Response body: {}".format(response.json()))
+        return False
 
 if __name__ == "__main__":
     register_hub()

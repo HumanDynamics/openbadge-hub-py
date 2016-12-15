@@ -17,3 +17,7 @@ if BADGE_SERVER_PORT is None:
     print("BADGE_SERVER_PORT is not set")
     sys.exit(1)
 
+APPKEY = os.environ.get("APPKEY")
+if APPKEY is None:
+    print("APPKEY is not set")
+    sys.exit(1)
