@@ -190,11 +190,11 @@ def scan_for_devices(devices_whitelist):
     return scanned_devices
 
 
-def create_badge_manager_instance(mode):
+def create_badge_manager_instance(mode,timestamp):
     if mode == "server":
         mgr = BadgeManagerServer(logger=logger)
     else:
-        mgr = BadgeManagerStandalone(logger=logger)
+        mgr = BadgeManagerStandalone(logger=logger,timestamp=timestamp)
     return mgr
 
 
@@ -307,7 +307,6 @@ def add_pull_command_options(subparsers):
                              , default='both'
                              , dest='start_recording',help='data recording option')
 
-
 def add_scan_command_options(subparsers):
     pull_parser = subparsers.add_parser('scan', help='Continuously scan for badges')
 
@@ -329,6 +328,9 @@ if __name__ == "__main__":
     parser.add_argument('-m','--hub_mode', choices=('server', 'standalone')
                         , default='standalone', dest='hub_mode'
                         , help="Operation mode - standalone (using a configuration file) or a server")
+    parser.add_argument('-t', '--timestamp'
+                             , type=int, required=False
+                             , dest='timestamp', help='UTC timestamp to start pulling data from')
 
     subparsers = parser.add_subparsers(help='Program mode (e.g. Scan, send dates, pull, scan etc.)', dest='mode')
     add_pull_command_options(subparsers)
@@ -338,7 +340,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    mgr = create_badge_manager_instance(args.hub_mode)
+    mgr = create_badge_manager_instance(args.hub_mode, args.timestamp)
 
     if not args.disable_reset_ble:
         logger.info("Resetting BLE")

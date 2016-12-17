@@ -7,13 +7,17 @@ from badge import Badge,now_utc_epoch
 
 
 class BadgeManagerStandalone():
-    def __init__(self, logger):
+    def __init__(self, logger,timestamp):
         self._badges= None
         self.logger = logger
         self._device_file = "device_macs.txt"
 
-        self._init_ts, self._init_ts_fract = now_utc_epoch()
-        self._init_ts -= 5 * 60 # start pulling data from the 5 minutes
+        if timestamp:
+            self._init_ts = timestamp
+            self._init_ts_fract = 0
+        else:
+            self._init_ts, self._init_ts_fract = now_utc_epoch()
+            self._init_ts -= 5 * 60 # start pulling data from the 5 minutes
         logger.debug("Standalone version. Will request data since {} {}".format(self._init_ts,self._init_ts_fract))
 
     def _read_file(self,device_file):
