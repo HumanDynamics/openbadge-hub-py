@@ -140,7 +140,10 @@ def send_data_to_server(logger, data_type, data):
     else:
         logger.error("Error posting data to server")
         logger.error("Response code: {}".format(response.status_code))
-        logger.error("Response body: {}".format(response.json()))
+        try:
+            logger.error("Response body: {}".format(response.json()))
+        except ValueError as e: 
+            logger.error("No Json in response.")
         return False
 
 if __name__ == "__main__":

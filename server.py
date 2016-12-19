@@ -6,8 +6,7 @@ SERVER = 'http://'+settings.BADGE_SERVER_ADDR+':'+settings.BADGE_SERVER_PORT+'/'
 PROJECTS_ENDPOINT = '{}projects'.format(SERVER)
 BADGES_ENDPOINT = '{}badges/'.format(SERVER)
 HUBS_ENDPOINT = '{}hubs/'.format(SERVER)
-# can't use the string format method because reasons
-DATALOGS_ENDPOINT = SERVER + "{}/datalogs"
+DATAFILES_ENDPOINT = "{}{}".format(SERVER, "{}/datafiles")
 
 def _badge(x):
     """
@@ -32,7 +31,7 @@ def _data(x):
     :param x: project key of hub's project
     :return:
     """
-    return DATALOGS_ENDPOINT.format(x)
+    return DATAFILES_ENDPOINT.format(x)
 
 BADGE_ENDPOINT = _badge
 DATA_ENDPOINT = _data
