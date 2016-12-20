@@ -15,6 +15,13 @@ from urllib import quote_plus
 
 SLEEP_WAIT_SEC = 60 # 1 minute
 
+
+def get_uuid():
+    """
+    Return the UUID of this hub for use in communication with server
+    """
+    return socket.gethostname()
+
 def register_hub():
     """
     Registers current computer as a hub
@@ -118,11 +125,21 @@ def _get_project_id(logger):
             .format(resp.status_code))
 
 def send_data_to_server(logger, data_type, data):
-    # need to get the project id this hub is associated with
+    """
+    Send data to the server
+    Args:
+        logger: for logging events/erros
+        data_type: audio or proximity
+        data: a json array containing the data to send
+    Returns:
+         the number of chunks written on the server
+    Raises:
+        RequestException: raises if the status code indicates an http error
+    """
     project_id = _get_project_id(logger)
     headers = {
         "content-type": "application/json",
-        "X-HUB-UUID": socket.gethostname(),
+        "X-HUB-UUID": get_uuid(),
         "X-APPKEY": settings.APPKEY
     }
     payload = {
@@ -131,20 +148,8 @@ def send_data_to_server(logger, data_type, data):
     }
     url = DATA_ENDPOINT(project_id) 
     response = requests.request("POST", url, data=json.dumps(payload), headers=headers)
-    if response.status_code == 200:
-        assert response.json()["chunks_written"] == response.json()["chunks_received"], \
-                "Chunks written and chunks received are not the same"
-        assert response.json()["chunks_written"] == len(data), \
-                 "Not all of the data sent was written"
-        return True
-    else:
-        logger.error("Error posting data to server")
-        logger.error("Response code: {}".format(response.status_code))
-        try:
-            logger.error("Response body: {}".format(response.json()))
-        except ValueError as e: 
-            logger.error("No Json in response.")
-        return False
+    response.raise_for_status() 
+    return response.json()["chunks_written"]
 
 if __name__ == "__main__":
     register_hub()

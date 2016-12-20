@@ -10,6 +10,7 @@ import subprocess
 import logging
 import json
 from time import time
+from requests.exceptions import RequestException
 
 from badge import *
 from badge_discoverer import BadgeDiscoverer
@@ -87,6 +88,10 @@ def offload_data():
     #NOTE do we want to optimize for memory or speed?
     # probably speed right now
     for pending_file_name, archive_file_name in files:
+        if not os.path.exists(pending_file_name):
+            # we don't have any data yet
+            continue
+
         chunks = []
         with open(pending_file_name, "r") as pending_file:
             #NOTE how many chunks can we fit in memory?
@@ -94,21 +99,34 @@ def offload_data():
             #NOTE file of size 140MB crashed w MemoryError
             for line in pending_file:
                 chunks.append(json.loads(line))
+
         if len(chunks) == 0:
             # No pending data to be sent
             continue
         # real quick grab the data type from the first data entry
         data_type = "audio" if "audio" in chunks[0]["type"] else "proximity"
-        success = hub_manager.send_data_to_server(logger, data_type, chunks)
-        if success:
-            logger.info("Successfully wrote {} data entries to server".format(len(chunks)))
+        # fire away!
+        try:
+            chunks_written = hub_manager.send_data_to_server(logger, data_type, chunks)
+            if chunks_written == len(chunks):
+                logger.info("Successfully wrote {} data entries to server"
+                    .format(len(chunks)))
+            else:
+                # this seems unlikely to happen but is good to keep track of i guess
+                logger.error("Data mismatch: {} data entries were not written to server"
+                    .format(len(chunks) - chunks_written))
+                
             # write to archive and erase pending file
             with open(archive_file_name, "a") as archive_file:
                 for chunk in chunks:
                     archive_file.write(json.dumps(chunk) + "\n")
             open(pending_file_name, "w").close()
-        #TODO what do on failure? 
-        # retry?
+        except RequestException as e:
+            #TODO what do on failure? 
+            # retry?
+            logger.error("Error sending data from file {} to server!"
+                .format(pending_file_name))
+            logger.error(e)
 
 def dialogue(bdg, activate_audio, activate_proximity):
     """
