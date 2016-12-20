@@ -190,18 +190,40 @@ def scan_for_devices(devices_whitelist):
     return scanned_devices
 
 
-def create_badge_manager_instance(mode):
+def create_badge_manager_instance(mode,timestamp):
     if mode == "server":
         mgr = BadgeManagerServer(logger=logger)
     else:
-        mgr = BadgeManagerStandalone(logger=logger)
+        mgr = BadgeManagerStandalone(logger=logger,timestamp=timestamp)
     return mgr
 
 
 def reset():
+    '''
+    Resets and reconfigures Bluetooth parameters. The specific parameters affect connection speed negotiation. It's
+    not pretty, but safer to change the conn params this way
+    :return:
+    '''
+
+    # Resets BLE hci
+    logger.info("Resetting bluetooth")
     reset_command = "hciconfig hci0 reset"
     args = shlex.split(reset_command)
     p = subprocess.Popen(args)
+
+    # israspberry pi?
+    logger.info("Setting bluetooth connection parameters")
+    if os.uname()[4][:3] == 'arm':
+        logger.info("Raspberry Pi detected, changing bluetooth connection parameters")
+        with open("/sys/kernel/debug/bluetooth/hci0/conn_min_interval", "w") as connparam:
+            connparam.write("16")
+        with open("/sys/kernel/debug/bluetooth/hci0/conn_max_interval", "w") as connparam:
+            connparam.write("17")
+    else:
+        logger.warn("Not a Raspberry Pi, Bluetooth connection parameters remain untouched (communication may be slower)")
+
+    time.sleep(2)  # requires sleep after reset
+    logger.info("Done resetting bluetooth")
 
 
 def pull_devices(mgr, start_recording):
@@ -307,7 +329,6 @@ def add_pull_command_options(subparsers):
                              , default='both'
                              , dest='start_recording',help='data recording option')
 
-
 def add_scan_command_options(subparsers):
     pull_parser = subparsers.add_parser('scan', help='Continuously scan for badges')
 
@@ -329,6 +350,9 @@ if __name__ == "__main__":
     parser.add_argument('-m','--hub_mode', choices=('server', 'standalone')
                         , default='standalone', dest='hub_mode'
                         , help="Operation mode - standalone (using a configuration file) or a server")
+    parser.add_argument('-t', '--timestamp'
+                             , type=int, required=False
+                             , dest='timestamp', help='UTC timestamp to start pulling data from (int)')
 
     subparsers = parser.add_subparsers(help='Program mode (e.g. Scan, send dates, pull, scan etc.)', dest='mode')
     add_pull_command_options(subparsers)
@@ -338,13 +362,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    mgr = create_badge_manager_instance(args.hub_mode)
+    mgr = create_badge_manager_instance(args.hub_mode, args.timestamp)
 
     if not args.disable_reset_ble:
-        logger.info("Resetting BLE")
         reset()
-        time.sleep(2)  # requires sleep after reset
-        logger.info("Done resetting BLE")
 
     if args.mode == "sync_all":
         sync_all_devices(mgr)
