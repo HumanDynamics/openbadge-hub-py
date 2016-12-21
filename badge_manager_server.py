@@ -4,7 +4,13 @@ import time
 
 from badge import *
 from server import BADGE_ENDPOINT, BADGES_ENDPOINT
+from settings import APPKEY, HUB_UUID
 
+
+REQUEST_HEADERS = {
+    "X-APPKEY": APPKEY,
+    "X-HUB-UUID": HUB_UUID
+}
 
 class BadgeManagerServer:
     def __init__(self, logger):
@@ -33,7 +39,7 @@ class BadgeManagerServer:
         while not done:
             try:
                 self.logger.info("Requesting devices from server...")
-                response = requests.get(BADGES_ENDPOINT)
+                response = requests.get(BADGES_ENDPOINT, headers=REQUEST_HEADERS)
                 if response.ok:
                     self.logger.info("Updating devices list ({})...".format(len(response.json())))
                     for d in response.json():
@@ -63,7 +69,7 @@ class BadgeManagerServer:
         while not done:
             try:
                 self.logger.info("Requesting device {} from server...".format(badge_key))
-                response = requests.get(BADGE_ENDPOINT(badge_key))
+                response = requests.get(BADGE_ENDPOINT(badge_key), headers=REQUEST_HEADERS)
                 if response.ok:
                     #self.logger.debug("Received ({})...".format(response.json()))
                     return self._jason_badge_to_object(response.json())
@@ -158,7 +164,7 @@ class BadgeManagerServer:
             }
 
             self.logger.debug("Sending update badge data to server, badge {} : {}".format(badge.key, data))
-            response = requests.patch(BADGE_ENDPOINT(badge.key), data=data)
+            response = requests.patch(BADGE_ENDPOINT(badge.key), data=data, headers=REQUEST_HEADERS)
             if response.ok is False:
                 if response.status_code == 400:
                     self.logger.debug("Server had more recent date, badge {} : {}".format(badge.key, response.text))
