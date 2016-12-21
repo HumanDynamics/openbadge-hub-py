@@ -24,7 +24,8 @@ class BadgeManagerServer:
                     d.get('key'),
                     init_audio_ts_int=conv(d.get('last_audio_ts')),
                     init_audio_ts_fract=conv(d.get('last_audio_ts_fract')),
-                    init_proximity_ts=conv(d.get('last_proximity_ts'))
+                    init_proximity_ts=conv(d.get('last_proximity_ts')),
+                    init_voltage=d.get('last_voltage')
         )
 
     def _read_badges_list_from_server(self, retry=True, retry_delay_sec=5):
@@ -161,6 +162,7 @@ class BadgeManagerServer:
                 'last_audio_ts': badge.last_audio_ts_int,
                 'last_audio_ts_fract': badge.last_audio_ts_fract,
                 'last_proximity_ts': badge.last_proximity_ts,
+                'last_voltage': badge.last_voltage,
             }
 
             self.logger.debug("Sending update badge data to server, badge {} : {}".format(badge.key, data))
