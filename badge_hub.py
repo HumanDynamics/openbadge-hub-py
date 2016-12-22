@@ -18,8 +18,9 @@ from badge_manager_server import BadgeManagerServer
 from badge_manager_standalone import BadgeManagerStandalone
 import hub_manager 
 
-log_file_name = 'server.log'
-scans_file_name = 'scan.txt'
+log_file_name = 'logs/server.log'
+scans_file_name = 'data/scan.txt'
+
 audio_file_name = 'data/log_audio_pending.txt'
 audio_archive_file_name = 'data/log_audio_archive.txt'
 proximity_file_name = 'data/log_proximity_pending.txt'

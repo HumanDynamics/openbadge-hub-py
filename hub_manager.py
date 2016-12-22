@@ -128,7 +128,7 @@ def send_data_to_server(logger, data_type, data):
     """
     Send data to the server
     Args:
-        logger: for logging events/erros
+        logger: for logging events/errors
         data_type: audio or proximity
         data: a json array containing the data to send
     Returns:
