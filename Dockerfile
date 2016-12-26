@@ -29,4 +29,5 @@ RUN pip install -r /app/requirements.txt
 WORKDIR /app
 
 # Define default command
-CMD ["bash"]
+#CMD ["bash"]
+ENTRYPOINT ["./badge_hub.py"]
