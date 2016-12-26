@@ -10,7 +10,9 @@ import subprocess
 import logging
 import json
 from time import time
+from datetime import datetime as dt
 from requests.exceptions import RequestException
+import glob
 
 from badge import *
 from badge_discoverer import BadgeDiscoverer
@@ -21,12 +23,16 @@ import hub_manager
 log_file_name = 'logs/server.log'
 scans_file_name = 'data/scan.txt'
 
-audio_file_name = 'data/log_audio_pending.txt'
-audio_archive_file_name = 'data/log_audio_archive.txt'
-proximity_file_name = 'data/log_proximity_pending.txt'
-proximity_archive_file_name = 'data/log_proximity_archive.txt'
+data_dir = 'data/'
+pending_file_prefix = data_dir + 'pending_'
+audio_archive_file_name = data_dir + 'audio_archive.txt'
+proximity_archive_file_name = data_dir + 'proximity_archive.txt'
+
+AUDIO = "audio"
+PROXIMITY = "proximity"
 
 SCAN_DURATION = 3  # seconds
+MAX_PENDING_FILE_SIZE = 20000000 # in bytes, so 20MB
 
 # create logger with 'badge_server'
 logger = logging.getLogger('badge_server')
@@ -79,31 +85,25 @@ def get_devices(device_file="device_macs.txt"):
 def round_float_for_log(x):
     return float("{0:.3f}".format(x))
 
+def has_chunks(filename):
+    return os.path.exists(filename) and os.path.getsize(filename) > 0
 def offload_data():
     """
     Send pending files to server and move pending to archive
+    
+    Return True on success, False on failure
     """
-    files = [(audio_file_name, audio_archive_file_name), 
-             (proximity_file_name, proximity_archive_file_name)]
-
-    #NOTE do we want to optimize for memory or speed?
-    # probably speed right now
-    for pending_file_name, archive_file_name in files:
-        if not os.path.exists(pending_file_name):
-            # we don't have any data yet
+    pending_files = glob.glob(pending_file_prefix + "*")
+    for pending_file_name in pending_files:
+        
+        if not has_chunks(pending_file_name):
             continue
 
         chunks = []
         with open(pending_file_name, "r") as pending_file:
-            #NOTE how many chunks can we fit in memory?
-            # do we need to do anything to safeguard this?
-            #NOTE file of size 140MB crashed w MemoryError
             for line in pending_file:
                 chunks.append(json.loads(line))
 
-        if len(chunks) == 0:
-            # No pending data to be sent
-            continue
         # real quick grab the data type from the first data entry
         data_type = "audio" if "audio" in chunks[0]["type"] else "proximity"
         # fire away!
@@ -116,19 +116,68 @@ def offload_data():
                 # this seems unlikely to happen but is good to keep track of i guess
                 logger.error("Data mismatch: {} data entries were not written to server"
                     .format(len(chunks) - chunks_written))
+                logger.error("Error sending data from file {} to server!"
+                    .format(pending_file_name))
+                return False
                 
             # write to archive and erase pending file
-            with open(archive_file_name, "a") as archive_file:
+            with open(get_archive_name(data_type), "a") as archive_file:
                 for chunk in chunks:
                     archive_file.write(json.dumps(chunk) + "\n")
-            open(pending_file_name, "w").close()
+            os.remove(pending_file_name)
         except RequestException as e:
-            #TODO what do on failure? 
-            # retry?
             logger.error("Error sending data from file {} to server!"
                 .format(pending_file_name))
             logger.error(e)
+            return False
+    return True
 
+
+def get_archive_name(data_type):
+    """
+    Return the name of the archive file for the passed data type
+    """
+    if data_type == AUDIO:
+        return audio_archive_file_name
+    else:
+        return proximity_archive_file_name
+
+def get_proximity_name():
+    return _get_pending_file_name(PROXIMITY)
+
+def get_audio_name():
+    return _get_pending_file_name(AUDIO)
+
+def _get_pending_file_name(data_type):
+    """
+    If there are no current pending files < MAX_PENDING_FILE_SIZE in size,
+        return a new pending filename
+    Else, return an existing one.
+    """
+    filenames = filter(
+            lambda x: os.path.getsize(x) < MAX_PENDING_FILE_SIZE,
+            glob.glob("{}*{}*".format(pending_file_prefix, data_type)))
+    if len(filenames) == 0:
+        return _create_pending_file_name(data_type)
+    else:
+        return filenames[0]
+                
+def _create_pending_file_name(data_type):
+    """
+    Create a pending file name for the given data_type
+    
+    Uses the current date/time to create a unique filename
+    """
+    now = dt.now().strftime("%Y%m%d%H%M%S")
+    filename = "{}{}_{}.txt".format(pending_file_prefix, now, data_type)
+    if os.path.exists(filename):
+        # this seems unlikely to happen, but just in case :)
+        files = glob.glob("{}{}*{}*".format(pending_file_prefix, now, data_type))
+        now = '_'.join(now, len(files) + 1)
+        filename =  "{}{}_{}.txt".format(pending_file_prefix, now, data_type)
+
+    return filename 
+     
 def dialogue(bdg, activate_audio, activate_proximity):
     """
     Attempts to read data from the device specified by the address. Reading is handled by gatttool.
@@ -147,7 +196,7 @@ def dialogue(bdg, activate_audio, activate_proximity):
         logger.info("saving chunks to file")
 
         # store in JSON file
-        with open(audio_file_name, "a") as fout:
+        with open(get_audio_name(), "a") as fout:
             for chunk in bdg.dlg.chunks:
                 ts_with_ms = round_float_for_log(ts_and_fract_to_float(chunk.ts, chunk.fract))
                 log_line = {
@@ -190,7 +239,7 @@ def dialogue(bdg, activate_audio, activate_proximity):
     if bdg.dlg.scans:
         logger.info("Proximity scans received: {}".format(len(bdg.dlg.scans)))
         logger.info("saving proximity scans to file")
-        with open(proximity_file_name, "a") as fout:
+        with open(get_proximity_name(), "a") as fout:
             for scan in bdg.dlg.scans:
                 ts_with_ms = round_float_for_log(scan.ts)
                 log_line = {
