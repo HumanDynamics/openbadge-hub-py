@@ -86,13 +86,19 @@ def round_float_for_log(x):
     return float("{0:.3f}".format(x))
 
 def has_chunks(filename):
+    """
+    Returns true if there is data in the file, and false otherwise
+    """
     return os.path.exists(filename) and os.path.getsize(filename) > 0
+    
 def offload_data():
     """
     Send pending files to server and move pending to archive
     
     Return True on success, False on failure
     """
+    #NOTE not currently doing anything with the True/False
+    # return values, might decide to do something later
     pending_files = glob.glob(pending_file_prefix + "*")
     for pending_file_name in pending_files:
         
@@ -143,6 +149,10 @@ def get_archive_name(data_type):
         return proximity_archive_file_name
 
 def get_proximity_name():
+    """
+    return the name of the existing pending proximity file,
+    or a new one if either one doesn't exist or the existing file is > 20MB
+    """
     return _get_pending_file_name(PROXIMITY)
 
 def get_audio_name():
@@ -172,6 +182,7 @@ def _create_pending_file_name(data_type):
     filename = "{}{}_{}.txt".format(pending_file_prefix, now, data_type)
     if os.path.exists(filename):
         # this seems unlikely to happen, but just in case :)
+        # get the number of pending files that match this time and add one
         files = glob.glob("{}{}*{}*".format(pending_file_prefix, now, data_type))
         now = '_'.join(now, len(files) + 1)
         filename =  "{}{}_{}.txt".format(pending_file_prefix, now, data_type)
