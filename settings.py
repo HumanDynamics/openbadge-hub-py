@@ -23,4 +23,12 @@ if APPKEY is None:
     print("APPKEY is not set")
     sys.exit(1)
 
+if os.environ.get("DATA_DIR").endswith("/"):
+    DATA_DIR = os.environ.get("DATA_DIR")
+else:
+    DATA_DIR = os.environ.get("DATA_DIR") + "/"
+if DATA_DIR is None:
+    print("DATA_DIR is not set")
+    sys.exit(1)
+
 HUB_UUID = socket.gethostname()

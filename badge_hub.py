@@ -19,14 +19,14 @@ from badge_discoverer import BadgeDiscoverer
 from badge_manager_server import BadgeManagerServer
 from badge_manager_standalone import BadgeManagerStandalone
 import hub_manager 
+from settings import DATA_DIR
 
 log_file_name = 'logs/server.log'
 scans_file_name = 'data/scan.txt'
 
-data_dir = 'data/'
-pending_file_prefix = data_dir + 'pending_'
-audio_archive_file_name = data_dir + 'audio_archive.txt'
-proximity_archive_file_name = data_dir + 'proximity_archive.txt'
+pending_file_prefix = DATA_DIR + 'pending_'
+audio_archive_file_name = DATA_DIR + 'audio_archive.txt'
+proximity_archive_file_name = DATA_DIR + 'Proximity_archive.txt'
 
 AUDIO = "audio"
 PROXIMITY = "proximity"
@@ -184,7 +184,7 @@ def _create_pending_file_name(data_type):
         # this seems unlikely to happen, but just in case :)
         # get the number of pending files that match this time and add one
         files = glob.glob("{}{}*{}*".format(pending_file_prefix, now, data_type))
-        now = '_'.join(now, len(files) + 1)
+        now = '_'.join((now, str(len(files) + 1)))
         filename =  "{}{}_{}.txt".format(pending_file_prefix, now, data_type)
 
     return filename 
