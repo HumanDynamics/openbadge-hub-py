@@ -5,7 +5,6 @@ MAINTAINER Felix Eckhardt felix.e@gmx.de
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    vim \
     python \
     python-dev \
     python-pip \
@@ -13,10 +12,6 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     libglib2.0-dev \
     bluez \
-    libbluetooth-dev \
-    libboost-python-dev \
-    git \ 
-    supervisor \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
