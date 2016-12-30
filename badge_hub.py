@@ -19,19 +19,21 @@ from badge_discoverer import BadgeDiscoverer
 from badge_manager_server import BadgeManagerServer
 from badge_manager_standalone import BadgeManagerStandalone
 import hub_manager 
-from settings import DATA_DIR
+from settings import DATA_DIR, LOG_DIR
 
-log_file_name = 'logs/server.log'
-scans_file_name = 'data/scan.txt'
+log_file_name = LOG_DIR + 'server.log'
+scans_file_name = DATA_DIR + 'scan.txt'
 
 pending_file_prefix = DATA_DIR + 'pending_'
 audio_archive_file_name = DATA_DIR + 'audio_archive.txt'
-proximity_archive_file_name = DATA_DIR + 'Proximity_archive.txt'
+proximity_archive_file_name = DATA_DIR + 'proximity_archive.txt'
 
 AUDIO = "audio"
 PROXIMITY = "proximity"
 
 SCAN_DURATION = 3  # seconds
+
+#NOTE try to keep under 100MB or so due to memory constraints
 MAX_PENDING_FILE_SIZE = 20000000 # in bytes, so 20MB
 
 # create logger with 'badge_server'
@@ -97,6 +99,7 @@ def offload_data():
     
     Return True on success, False on failure
     """
+    #TODO test with standalone
     #NOTE not currently doing anything with the True/False
     # return values, might decide to do something later
     pending_files = glob.glob(pending_file_prefix + "*")
@@ -151,7 +154,8 @@ def get_archive_name(data_type):
 def get_proximity_name():
     """
     return the name of the existing pending proximity file,
-    or a new one if either one doesn't exist or the existing file is > 20MB
+    or a new one if either one doesn't exist or if  
+    the existing file is > MAX_PENDING_FILE_SIZE
     """
     return _get_pending_file_name(PROXIMITY)
 
@@ -361,11 +365,20 @@ def pull_devices(mgr, start_recording):
 
     while True:
         mgr.pull_badges_list()
-        logger.info("Attempting to offload data to server")
-        offload_data()
+        # When we refactor we can change this, but for now:
+        if isinstance(mgr, BadgeManagerServer):
+            logger.info("Attempting to offload data to server")
+            offload_data()
         logger.info("Scanning for devices...")
         scanned_devices = scan_for_devices(mgr.badges.keys())
+        # iterate before the actual data collection loop just to offload
+        # voltages to the server (and update heartbeat on server)
+        for device in scanned_devices:
+            b = mgr.badges.get(device['mac'])
+            b.last_voltage = device['device_info']['adv_payload']['voltage']
+            mgr.send_badge(device['mac'])
 
+        # now the actual data collection 
         for device in scanned_devices:
             b = mgr.badges.get(device['mac'])
             # try to update latest badge timestamps from the server

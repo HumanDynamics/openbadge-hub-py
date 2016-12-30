@@ -11,6 +11,7 @@ import settings
 import json
 from urllib2 import urlopen
 from server import HUB_ENDPOINT, HUBS_ENDPOINT, PROJECTS_ENDPOINT, DATA_ENDPOINT
+from server import request_headers
 from urllib import quote_plus
 
 SLEEP_WAIT_SEC = 60 # 1 minute
@@ -110,12 +111,7 @@ def pull_hubs_list(logger):
     return server_hubs
 
 def _get_project_id(logger):
-    headers = {
-        "X-HUB-UUID": socket.gethostname(),
-        "X-APPKEY": settings.APPKEY
-    }
-    
-    resp = requests.request("GET", PROJECTS_ENDPOINT, headers=headers)
+    resp = requests.request("GET", PROJECTS_ENDPOINT, headers=request_headers())
     if resp.status_code == 200:
         return resp.json()["key"]
     else:
@@ -137,11 +133,8 @@ def send_data_to_server(logger, data_type, data):
         RequestException: raises if the status code indicates an http error
     """
     project_id = _get_project_id(logger)
-    headers = {
-        "content-type": "application/json",
-        "X-HUB-UUID": get_uuid(),
-        "X-APPKEY": settings.APPKEY
-    }
+    headers = request_headers()
+    headers["content-type"] = "application/json"
     payload = {
         "data_type": data_type,
         "chunks": data

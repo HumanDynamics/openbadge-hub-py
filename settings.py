@@ -23,6 +23,14 @@ if APPKEY is None:
     print("APPKEY is not set")
     sys.exit(1)
 
+if os.environ.get("LOG_DIR").endswith("/"):
+    LOG_DIR = os.environ.get("LOG_DIR")
+else:
+    LOG_DIR = os.environ.get("LOG_DIR") + "/"
+if LOG_DIR is None:
+    print("LOG_DIR is not set")
+    sys.exit(1)
+
 if os.environ.get("DATA_DIR").endswith("/"):
     DATA_DIR = os.environ.get("DATA_DIR")
 else:

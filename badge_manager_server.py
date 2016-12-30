@@ -3,14 +3,9 @@ import requests
 import time
 
 from badge import *
-from server import BADGE_ENDPOINT, BADGES_ENDPOINT
+from server import BADGE_ENDPOINT, BADGES_ENDPOINT, request_headers
 from settings import APPKEY, HUB_UUID
 
-
-REQUEST_HEADERS = {
-    "X-APPKEY": APPKEY,
-    "X-HUB-UUID": HUB_UUID
-}
 
 class BadgeManagerServer:
     def __init__(self, logger):
@@ -40,7 +35,7 @@ class BadgeManagerServer:
         while not done:
             try:
                 self.logger.info("Requesting devices from server...")
-                response = requests.get(BADGES_ENDPOINT, headers=REQUEST_HEADERS)
+                response = requests.get(BADGES_ENDPOINT, headers=request_headers())
                 if response.ok:
                     self.logger.info("Updating devices list ({})...".format(len(response.json())))
                     for d in response.json():
@@ -70,7 +65,7 @@ class BadgeManagerServer:
         while not done:
             try:
                 self.logger.info("Requesting device {} from server...".format(badge_key))
-                response = requests.get(BADGE_ENDPOINT(badge_key), headers=REQUEST_HEADERS)
+                response = requests.get(BADGE_ENDPOINT(badge_key), headers=request_headers())
                 if response.ok:
                     #self.logger.debug("Received ({})...".format(response.json()))
                     return self._jason_badge_to_object(response.json())
@@ -143,9 +138,9 @@ class BadgeManagerServer:
         :return:
         """
         badge = self._badges[mac]
-        server_badge = self._read_badge_from_server(badge .key)
+        server_badge = self._read_badge_from_server(badge.key)
         if server_badge is None:
-            self.logger.warn("Could not find device {} in server, or communication problem".format(badge .key))
+            self.logger.warn("Could not find device {} in server, or communication problem".format(badge.key))
         else:
             # update timestamps if more recent
             self._update_badge_with_server_badge(badge, server_badge)
@@ -166,7 +161,7 @@ class BadgeManagerServer:
             }
 
             self.logger.debug("Sending update badge data to server, badge {} : {}".format(badge.key, data))
-            response = requests.patch(BADGE_ENDPOINT(badge.key), data=data, headers=REQUEST_HEADERS)
+            response = requests.patch(BADGE_ENDPOINT(badge.key), data=data, headers=request_headers())
             if response.ok is False:
                 if response.status_code == 400:
                     self.logger.debug("Server had more recent date, badge {} : {}".format(badge.key, response.text))

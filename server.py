@@ -1,6 +1,7 @@
 # Defining end points for backend-server
 from __future__ import absolute_import, division, print_function
 import settings
+import time
 
 SERVER = 'http://'+settings.BADGE_SERVER_ADDR+':'+settings.BADGE_SERVER_PORT+'/'
 PROJECTS_ENDPOINT = '{}projects'.format(SERVER)
@@ -36,3 +37,13 @@ def _data(x):
 BADGE_ENDPOINT = _badge
 DATA_ENDPOINT = _data
 HUB_ENDPOINT = _hub
+
+def request_headers():
+    """ 
+    Generate the headers to be used for all requests to server
+    """
+    return {
+        "X-APPKEY": settings.APPKEY,
+        "X-HUB-UUID": settings.HUB_UUID,
+        "X-HUB-TIME": time.time()
+    }
