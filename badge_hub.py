@@ -203,6 +203,8 @@ def dialogue(bdg, activate_audio, activate_proximity):
     addr = bdg.addr
     if ret == 0:
         logger.info("Successfully pulled data")
+        # if we were able to pull data, we saw the badge again
+        bdg.last_seen_ts = time.time()
     else:
         logger.info("Errors pulling data. Saving data is anything was received")
 
@@ -376,6 +378,7 @@ def pull_devices(mgr, start_recording):
         for device in scanned_devices:
             b = mgr.badges.get(device['mac'])
             b.last_voltage = device['device_info']['adv_payload']['voltage']
+            b.last_seen_ts = time.time()
             mgr.send_badge(device['mac'])
 
         # now the actual data collection 

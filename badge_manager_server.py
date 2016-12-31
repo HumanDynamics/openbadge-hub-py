@@ -158,6 +158,7 @@ class BadgeManagerServer:
                 'last_audio_ts_fract': badge.last_audio_ts_fract,
                 'last_proximity_ts': badge.last_proximity_ts,
                 'last_voltage': badge.last_voltage,
+                'last_seen_ts': badge.last_seen_ts,
             }
 
             self.logger.debug("Sending update badge data to server, badge {} : {}".format(badge.key, data))
