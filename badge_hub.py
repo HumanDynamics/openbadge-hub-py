@@ -10,18 +10,34 @@ import subprocess
 import logging
 import json
 from time import time
+from datetime import datetime as dt
+from requests.exceptions import RequestException
+import glob
 
 from badge import *
 from badge_discoverer import BadgeDiscoverer
 from badge_manager_server import BadgeManagerServer
 from badge_manager_standalone import BadgeManagerStandalone
+import hub_manager 
+from settings import DATA_DIR, LOG_DIR
 
-log_file_name = 'server.log'
-scans_file_name = 'scan.txt'
-audio_file_name = 'log_audio.txt'
-proximity_file_name = 'log_proximity.txt'
+log_file_name = LOG_DIR + 'server.log'
+scans_file_name = DATA_DIR + 'scan.txt'
+
+pending_file_prefix = DATA_DIR + 'pending_'
+audio_archive_file_name = DATA_DIR + 'audio_archive.txt'
+proximity_archive_file_name = DATA_DIR + 'proximity_archive.txt'
+
+standalone_audio_file = DATA_DIR + 'audio_data.txt'
+standalone_proximity_file = DATA_DIR + 'proximity_data.txt'
+
+AUDIO = "audio"
+PROXIMITY = "proximity"
 
 SCAN_DURATION = 3  # seconds
+
+#NOTE try to keep under 100MB or so due to memory constraints
+MAX_PENDING_FILE_SIZE = 20000000 # in bytes, so 20MB
 
 # create logger with 'badge_server'
 logger = logging.getLogger('badge_server')
@@ -74,8 +90,119 @@ def get_devices(device_file="device_macs.txt"):
 def round_float_for_log(x):
     return float("{0:.3f}".format(x))
 
+def has_chunks(filename):
+    """
+    Returns true if there is data in the file, and false otherwise
+    """
+    return os.path.exists(filename) and os.path.getsize(filename) > 0
+    
+def offload_data():
+    """
+    Send pending files to server and move pending to archive
+    
+    Return True on success, False on failure
+    """
+    #TODO test with standalone
+    #NOTE not currently doing anything with the True/False
+    # return values, might decide to do something later
+    pending_files = glob.glob(pending_file_prefix + "*")
+    for pending_file_name in pending_files:
+        
+        if not has_chunks(pending_file_name):
+            continue
 
-def dialogue(bdg, activate_audio, activate_proximity):
+        chunks = []
+        with open(pending_file_name, "r") as pending_file:
+            for line in pending_file:
+                chunks.append(json.loads(line))
+
+        # real quick grab the data type from the first data entry
+        data_type = "audio" if "audio" in chunks[0]["type"] else "proximity"
+        # fire away!
+        try:
+            chunks_written = hub_manager.send_data_to_server(logger, data_type, chunks)
+            if chunks_written == len(chunks):
+                logger.info("Successfully wrote {} data entries to server"
+                    .format(len(chunks)))
+            else:
+                # this seems unlikely to happen but is good to keep track of i guess
+                logger.error("Data mismatch: {} data entries were not written to server"
+                    .format(len(chunks) - chunks_written))
+                logger.error("Error sending data from file {} to server!"
+                    .format(pending_file_name))
+                return False
+                
+            # write to archive and erase pending file
+            with open(get_archive_name(data_type), "a") as archive_file:
+                for chunk in chunks:
+                    archive_file.write(json.dumps(chunk) + "\n")
+            os.remove(pending_file_name)
+        except RequestException as e:
+            logger.error("Error sending data from file {} to server!"
+                .format(pending_file_name))
+            logger.error(e)
+            return False
+    return True
+
+
+def get_archive_name(data_type):
+    """
+    Return the name of the archive file for the passed data type
+    """
+    if data_type == AUDIO:
+        return audio_archive_file_name
+    else:
+        return proximity_archive_file_name
+
+def get_proximity_name(mode="server"):
+    """
+    return the name of the existing pending proximity file,
+    or a new one if either one doesn't exist or if  
+    the existing file is > MAX_PENDING_FILE_SIZE
+    """
+    if mode == "server":
+        return _get_pending_file_name(PROXIMITY)
+    else:
+        return standalone_proximity_file
+
+def get_audio_name(mode="server"):
+    if mode == "server":
+        return _get_pending_file_name(AUDIO)
+    else:
+        return standalone_audio_file
+
+def _get_pending_file_name(data_type):
+    """
+    If there are no current pending files < MAX_PENDING_FILE_SIZE in size,
+        return a new pending filename
+    Else, return an existing one.
+    """
+    filenames = filter(
+            lambda x: os.path.getsize(x) < MAX_PENDING_FILE_SIZE,
+            glob.glob("{}*{}*".format(pending_file_prefix, data_type)))
+    if len(filenames) == 0:
+        return _create_pending_file_name(data_type)
+    else:
+        return filenames[0]
+                
+def _create_pending_file_name(data_type):
+    """
+    Create a pending file name for the given data_type
+    
+    Uses the current date/time to create a unique filename
+    """
+    now = dt.now().strftime("%Y%m%d%H%M%S")
+    filename = "{}{}_{}.txt".format(pending_file_prefix, now, data_type)
+    if os.path.exists(filename):
+        # this seems unlikely to happen, but just in case :)
+        # get the number of pending files that match this time and add one
+        files = glob.glob("{}{}*{}*".format(pending_file_prefix, now, data_type))
+        now = '_'.join((now, str(len(files) + 1)))
+        filename =  "{}{}_{}.txt".format(pending_file_prefix, now, data_type)
+
+    return filename 
+     
+def dialogue(bdg, activate_audio, activate_proximity, mode="server"):
     """
     Attempts to read data from the device specified by the address. Reading is handled by gatttool.
     :param bdg:
@@ -85,15 +212,17 @@ def dialogue(bdg, activate_audio, activate_proximity):
     addr = bdg.addr
     if ret == 0:
         logger.info("Successfully pulled data")
+        # if we were able to pull data, we saw the badge again
+        bdg.last_seen_ts = time.time()
     else:
-        logger.info("Errors pulling data. Saving data is anything was received")
+        logger.info("Errors pulling data.")
 
     if bdg.dlg.chunks:
         logger.info("Chunks received: {}".format(len(bdg.dlg.chunks)))
         logger.info("saving chunks to file")
 
         # store in JSON file
-        with open(audio_file_name, "a") as fout:
+        with open(get_audio_name(mode), "a") as fout:
             for chunk in bdg.dlg.chunks:
                 ts_with_ms = round_float_for_log(ts_and_fract_to_float(chunk.ts, chunk.fract))
                 log_line = {
@@ -124,6 +253,7 @@ def dialogue(bdg, activate_audio, activate_proximity):
         logger.debug("Setting last badge audio timestamp to {} {}".format(last_chunk.ts, last_chunk.fract))
         if bdg.is_newer_audio_ts(last_chunk.ts, last_chunk.fract):
             bdg.set_audio_ts(last_chunk.ts, last_chunk.fract)
+            bdg.last_voltage = round_float_for_log(chunk.voltage)
         else:
             logger.debug("Keeping existing timestamp ({}.{}) for {}. Last chunk timestamp was: {}.{}"
                               .format(bdg.last_audio_ts_int,bdg.last_audio_ts_fract,bdg.addr, last_chunk.ts, last_chunk.fract))
@@ -135,7 +265,7 @@ def dialogue(bdg, activate_audio, activate_proximity):
     if bdg.dlg.scans:
         logger.info("Proximity scans received: {}".format(len(bdg.dlg.scans)))
         logger.info("saving proximity scans to file")
-        with open(proximity_file_name, "a") as fout:
+        with open(get_proximity_name(mode), "a") as fout:
             for scan in bdg.dlg.scans:
                 ts_with_ms = round_float_for_log(scan.ts)
                 log_line = {
@@ -243,19 +373,34 @@ def pull_devices(mgr, start_recording):
         activate_proximity = False
 
     logger.info("Start recording: Audio = {}, Proximity = {}".format(activate_audio,activate_proximity))
+    mode = "server" if isinstance(mgr, BadgeManagerServer) else "standalone"
 
     while True:
         mgr.pull_badges_list()
-
+        # When we refactor we can change this, but for now:
+        if mode == "server":
+            logger.info("Attempting to offload data to server")
+            offload_data()
         logger.info("Scanning for devices...")
         scanned_devices = scan_for_devices(mgr.badges.keys())
+        # iterate before the actual data collection loop just to offload
+        # voltages to the server (and update heartbeat on server)
+        for device in scanned_devices:
+            b = mgr.badges.get(device['mac'])
+            # i don't think adv_payload is ever supposed to be empty, 
+            # but sometimes it is. and when it is, it breaks
+            if device['device_info']['adv_payload'] is not None:
+                b.last_voltage = device['device_info']['adv_payload']['voltage']
+            b.last_seen_ts = time.time()
+            mgr.send_badge(device['mac'])
 
+        # now the actual data collection 
         for device in scanned_devices:
             b = mgr.badges.get(device['mac'])
             # try to update latest badge timestamps from the server
             mgr.pull_badge(b.addr)
             # pull data
-            dialogue(b, activate_audio, activate_proximity)
+            dialogue(b, activate_audio, activate_proximity, mode)
 
             # update timestamps on server
             mgr.send_badge(device['mac'])
@@ -296,7 +441,6 @@ def devices_scanner(mgr):
 
 def start_all_devices(mgr):
     logger.info('Starting all badges recording.')
-
     while True:
         mgr.pull_badges_list()
 

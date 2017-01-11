@@ -7,12 +7,21 @@ import logging
 import traceback
 import time
 
-from json import load
+import settings
+import json
 from urllib2 import urlopen
-from server import HUB_ENDPOINT, HUBS_ENDPOINT
+from server import HUB_ENDPOINT, HUBS_ENDPOINT, PROJECTS_ENDPOINT, DATA_ENDPOINT
+from server import request_headers
 from urllib import quote_plus
 
 SLEEP_WAIT_SEC = 60 # 1 minute
+
+
+def get_uuid():
+    """
+    Return the UUID of this hub for use in communication with server
+    """
+    return socket.gethostname()
 
 def register_hub():
     """
@@ -31,7 +40,7 @@ def send_hub_ip():
     hostname = socket.gethostname()
     encoded_hostname = quote_plus(hostname)
     try:
-        my_ip = load(urlopen('http://jsonip.com'))['ip']
+        my_ip = json.load(urlopen('http://jsonip.com'))['ip']
     except Exception as e:
         s = traceback.format_exc()
         logger.error('Error getting IP: {} {}'.format(e,s))
@@ -100,6 +109,40 @@ def _read_hubs_list_from_server(logger, retry=True, retry_delay_sec=5):
 def pull_hubs_list(logger):
     server_hubs = _read_hubs_list_from_server(logger, retry=False)
     return server_hubs
+
+def _get_project_id(logger):
+    resp = requests.request("GET", PROJECTS_ENDPOINT, headers=request_headers())
+    if resp.status_code == 200:
+        return resp.json()["key"]
+    else:
+        #TODO what do
+        #I don't think this is likely to ever happen, at least
+        logger.error("Error getting project key from server, status code: {}"
+            .format(resp.status_code))
+
+def send_data_to_server(logger, data_type, data):
+    """
+    Send data to the server
+    Args:
+        logger: for logging events/errors
+        data_type: audio or proximity
+        data: a json array containing the data to send
+    Returns:
+         the number of chunks written on the server
+    Raises:
+        RequestException: raises if the status code indicates an http error
+    """
+    project_id = _get_project_id(logger)
+    headers = request_headers()
+    headers["content-type"] = "application/json"
+    payload = {
+        "data_type": data_type,
+        "chunks": data
+    }
+    url = DATA_ENDPOINT(project_id) 
+    response = requests.request("POST", url, data=json.dumps(payload), headers=headers)
+    response.raise_for_status() 
+    return response.json()["chunks_written"]
 
 if __name__ == "__main__":
     register_hub()

@@ -3,7 +3,8 @@ import requests
 import time
 
 from badge import *
-from server import BADGE_ENDPOINT, BADGES_ENDPOINT
+from server import BADGE_ENDPOINT, BADGES_ENDPOINT, request_headers
+from settings import APPKEY, HUB_UUID
 
 
 class BadgeManagerServer:
@@ -18,7 +19,8 @@ class BadgeManagerServer:
                     d.get('key'),
                     init_audio_ts_int=conv(d.get('last_audio_ts')),
                     init_audio_ts_fract=conv(d.get('last_audio_ts_fract')),
-                    init_proximity_ts=conv(d.get('last_proximity_ts'))
+                    init_proximity_ts=conv(d.get('last_proximity_ts')),
+                    init_voltage=d.get('last_voltage')
         )
 
     def _read_badges_list_from_server(self, retry=True, retry_delay_sec=5):
@@ -33,7 +35,7 @@ class BadgeManagerServer:
         while not done:
             try:
                 self.logger.info("Requesting devices from server...")
-                response = requests.get(BADGES_ENDPOINT)
+                response = requests.get(BADGES_ENDPOINT, headers=request_headers())
                 if response.ok:
                     self.logger.info("Updating devices list ({})...".format(len(response.json())))
                     for d in response.json():
@@ -63,7 +65,7 @@ class BadgeManagerServer:
         while not done:
             try:
                 self.logger.info("Requesting device {} from server...".format(badge_key))
-                response = requests.get(BADGE_ENDPOINT(badge_key))
+                response = requests.get(BADGE_ENDPOINT(badge_key), headers=request_headers())
                 if response.ok:
                     #self.logger.debug("Received ({})...".format(response.json()))
                     return self._jason_badge_to_object(response.json())
@@ -136,9 +138,9 @@ class BadgeManagerServer:
         :return:
         """
         badge = self._badges[mac]
-        server_badge = self._read_badge_from_server(badge .key)
+        server_badge = self._read_badge_from_server(badge.key)
         if server_badge is None:
-            self.logger.warn("Could not find device {} in server, or communication problem".format(badge .key))
+            self.logger.warn("Could not find device {} in server, or communication problem".format(badge.key))
         else:
             # update timestamps if more recent
             self._update_badge_with_server_badge(badge, server_badge)
@@ -155,10 +157,12 @@ class BadgeManagerServer:
                 'last_audio_ts': badge.last_audio_ts_int,
                 'last_audio_ts_fract': badge.last_audio_ts_fract,
                 'last_proximity_ts': badge.last_proximity_ts,
+                'last_voltage': badge.last_voltage,
+                'last_seen_ts': badge.last_seen_ts,
             }
 
             self.logger.debug("Sending update badge data to server, badge {} : {}".format(badge.key, data))
-            response = requests.patch(BADGE_ENDPOINT(badge.key), data=data)
+            response = requests.patch(BADGE_ENDPOINT(badge.key), data=data, headers=request_headers())
             if response.ok is False:
                 if response.status_code == 400:
                     self.logger.debug("Server had more recent date, badge {} : {}".format(badge.key, response.text))

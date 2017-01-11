@@ -275,6 +275,10 @@ class Badge:
     def last_proximity_ts(self):
         return self.__last_proximity_ts
 
+    @property
+    def last_voltage(self):
+        return self.last_voltage
+
     @last_proximity_ts.setter
     def last_proximity_ts(self, value):
         if value < self.__last_proximity_ts:
@@ -324,7 +328,7 @@ class Badge:
             # no value is set yetyet
             return True
 
-    def __init__(self, addr,logger, key, init_audio_ts_int=None, init_audio_ts_fract=None, init_proximity_ts=None):
+    def __init__(self, addr,logger, key, init_audio_ts_int=None, init_audio_ts_fract=None, init_proximity_ts=None, init_voltage=None):
         #if self.children.get(key):
         #    return self.children.get(key)
         self.children[key] = self
@@ -335,6 +339,7 @@ class Badge:
         self.conn = None
         self.connDialogue = BadgeDialogue(self)
 
+        self.last_voltage = init_voltage
         self.__audio_ts = None
 
         self.set_audio_ts(init_audio_ts_int, init_audio_ts_fract)
