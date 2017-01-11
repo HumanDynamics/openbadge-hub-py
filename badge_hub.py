@@ -215,7 +215,7 @@ def dialogue(bdg, activate_audio, activate_proximity, mode="server"):
         # if we were able to pull data, we saw the badge again
         bdg.last_seen_ts = time.time()
     else:
-        logger.info("Errors pulling data. Saving data is anything was received")
+        logger.info("Errors pulling data.")
 
     if bdg.dlg.chunks:
         logger.info("Chunks received: {}".format(len(bdg.dlg.chunks)))
