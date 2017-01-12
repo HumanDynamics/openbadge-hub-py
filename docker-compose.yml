@@ -3,6 +3,7 @@ version: '2'
 volumes:
   hub_data: {}
   hub_logs: {}
+  hub_config: {}
 
 services:
   openbadge-hub-py:
@@ -12,6 +13,7 @@ services:
     volumes:
       - hub_data:/data
       - hub_logs:/logs
+      - hub_config:/config
       - /sys/kernel/debug:/sys/kernel/debug
       - ./device_macs.txt:/app/device_macs.txt
     command: -m standalone scan
