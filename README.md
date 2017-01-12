@@ -6,4 +6,7 @@ make:
 make build
 
 run:
-docker run  --privileged -a stdin -a stdout -i -t  -it --net host humandynamics/openbadge-hub-py
+docker run  --privileged --net host  -e BADGE_SERVER_ADDR=localhost -e BADGE_SERVER_PORT=8000 APPKEY=secret -v /sys/kernel/debug:/sys/kernel/debug humandynamics/openbadge-hub-py -m standalone -dr scan
+
+run an interactive shell:
+docker run  --privileged -a stdin -a stdout -it --net host  --entrypoint=bash -v /sys/kernel/debug:/sys/kernel/debug humandynamics/openbadge-hub-py 
