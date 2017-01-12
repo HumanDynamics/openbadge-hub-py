@@ -20,6 +20,9 @@ RUN mkdir $DATA_DIR
 ENV LOG_DIR /logs
 RUN mkdir $LOG_DIR
 
+ENV CONFIG_DIR /config
+RUN mkdir $CONFIG_DIR
+
 COPY ./src /app
 
 RUN pip install -r /app/requirements.txt

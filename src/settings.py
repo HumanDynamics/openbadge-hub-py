@@ -39,4 +39,12 @@ if DATA_DIR is None:
     print("DATA_DIR is not set")
     sys.exit(1)
 
+if os.environ.get("CONFIG_DIR").endswith("/"):
+    CONFIG_DIR = os.environ.get("CONFIG_DIR")
+else:
+    CONFIG_DIR = os.environ.get("CONFIG_DIR") + "/"
+if CONFIG_DIR is None:
+    print("CONFIG_DIR is not set")
+    sys.exit(1)
+
 HUB_UUID = socket.gethostname()
