@@ -21,7 +21,7 @@ from badge_manager_standalone import BadgeManagerStandalone
 import hub_manager 
 from settings import DATA_DIR, LOG_DIR
 
-log_file_name = LOG_DIR + 'server.log'
+log_file_name = LOG_DIR + 'hub.log'
 scans_file_name = DATA_DIR + 'scan.txt'
 
 pending_file_prefix = DATA_DIR + 'pending_'
