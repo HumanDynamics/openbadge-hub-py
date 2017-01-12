@@ -1,0 +1,14 @@
+version: '2'
+
+services:
+  openbadge-hub-py:
+    build:
+      context: .
+      dockerfile: ./compose/openbadge-hub-py/Dockerfile
+    volumes:
+      - ./device_macs.txt:/app/device_macs.txt
+      - /sys/kernel/debug:/sys/kernel/debug
+    command: -m standalone scan
+    env_file: .env
+    privileged: true
+    network_mode: "host"
