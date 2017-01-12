@@ -4,13 +4,16 @@ import re
 import logging
 
 from badge import Badge,now_utc_epoch
+from settings import DATA_DIR, LOG_DIR, CONFIG_DIR
+
+devices_file = CONFIG_DIR + 'devices.txt'
 
 
 class BadgeManagerStandalone():
     def __init__(self, logger,timestamp):
         self._badges= None
         self.logger = logger
-        self._device_file = "device_macs.txt"
+        self._device_file = devices_file
 
         if timestamp:
             self._init_ts = timestamp

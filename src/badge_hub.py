@@ -62,9 +62,9 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 
-def get_devices(device_file="device_macs.txt"):
+def get_devices(device_file):
     """
-    Returns a list of devices included in device_macs.txt
+    Returns a list of devices included in devices.txt
     Format is device_mac<space>device_name
     :param device_file:
     :return:
