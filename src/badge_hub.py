@@ -357,6 +357,12 @@ def reset():
     logger.info("Done resetting bluetooth")
 
 def kill_bluepy():
+    """
+    Kill orphaned/leftover/defunct bluepy-helper processes
+    
+    I'd like to move this to a separate utility file or something when 
+        we refactor
+    """
     # get all the bluepy-helper processes
     CMD="/bin/ps ax | grep bluepy-helper | grep -v grep | awk '{ print $1 }'"
     p = subprocess.Popen(CMD, shell=True, stdout=subprocess.PIPE) 
@@ -370,10 +376,10 @@ def kill_bluepy():
         pids.remove(mypid)
     
     for pid in pids:
-        logger.debug("PID {} in list of helpers".format(pid))
         # KILL KILL KILL
         try:
             os.kill(int(pid), signal.SIGKILL)
+            # we waitpid to clean up defunct processes
             os.waitpid(int(pid), 0)         
             logger.info("Process with PID {} killed".format(pid))
         except OSError as err:
