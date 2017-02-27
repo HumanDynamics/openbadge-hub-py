@@ -11,6 +11,8 @@ device_macs*
 scan.txt
 log_proximity.txt
 log_audio.txt
+audio_archive.txt
+proximity_archive.txt
 *.log
 
 # Ansible
