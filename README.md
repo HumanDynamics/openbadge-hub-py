@@ -3,7 +3,6 @@ The hub supports two modes:
 * server - the hub reads list of badges from a openbadge-server and sends data back to the server
 
 = docker
-Note - docker image is based on - https://github.com/don41382/docker-rpi-python3-with-bluetooth
 
 Commands:
 * To run the hub in standalone mode, on an Ubuntu machine: docker-compose -f standalone_ubuntu up
