@@ -1,12 +1,13 @@
 # Pull base image
-FROM resin/rpi-raspbian:jessie
-MAINTAINER Felix Eckhardt felix.e@gmx.de
+FROM FROM resin/rpi-raspbian:jessie
+MAINTAINER Oren Lederman orenled@mit.edu
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     python \
     python-dev \
     python-pip \
+    python-setuptools \
     gcc \
     build-essential \
     libglib2.0-dev \
@@ -32,4 +33,4 @@ WORKDIR /app
 
 # Define default command
 #CMD ["bash"]
-ENTRYPOINT ["./badge_hub.py"]
+#ENTRYPOINT ["./badge_hub.py"]

@@ -3,8 +3,8 @@
 #
 .idea
 
-# configuration
-device_macs*
+# local configuration
+devices.txt
 .env
 
 # temp files and logs

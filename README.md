@@ -1,12 +1,13 @@
+The hub supports two modes:
+* standalone - no server needed. The hub will read a list of badges form the devices.txt file and data will be stored locally. This mode is useful for development, tests and small deployments
+* server - the hub reads list of badges from a openbadge-server and sends data back to the server
 
 = docker
-Based on - https://github.com/don41382/docker-rpi-python3-with-bluetooth
+Note - docker image is based on - https://github.com/don41382/docker-rpi-python3-with-bluetooth
 
-make:
-make build
+Commands:
+* To run the hub in standalone mode, on an Ubuntu machine: docker-compose -f standalone_ubuntu up
+* To run the hub in standalone mode, on a Raspberry Pi with Jessie: docker-compose -f standalone_jessie up
 
-run:
-docker run  --privileged --net host  -e BADGE_SERVER_ADDR=localhost -e BADGE_SERVER_PORT=8000 APPKEY=secret -v /sys/kernel/debug:/sys/kernel/debug humandynamics/openbadge-hub-py -m standalone -dr scan
-
-run an interactive shell:
-docker run  --privileged -a stdin -a stdout -it --net host  --entrypoint=bash -v /sys/kernel/debug:/sys/kernel/debug humandynamics/openbadge-hub-py 
+Other useful commands:
+* Gaining shell:  docker-compose -f standalone_ubuntu.yml run openbadge-hub-py /bin/bash

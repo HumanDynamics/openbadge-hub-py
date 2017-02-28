@@ -9,13 +9,14 @@ services:
   openbadge-hub-py:
     build:
       context: .
-      dockerfile: ./compose/openbadge-hub-py/Dockerfile
+      dockerfile: ./compose/openbadge-hub-py/Dockerfile_ubuntu
     volumes:
       - hub_data:/data
       - hub_logs:/logs
       - hub_config:/config
-      - /sys/kernel/debug:/sys/kernel/debug
-    command: -m server pull
-    env_file: .env
+      - ./devices.txt:/config/devices.txt
+    #  - /sys/kernel/debug:/sys/kernel/debug
+    command: ./badge_hub.py -m standalone pull
+    env_file: env.example #using as dummy
     privileged: true
     network_mode: "host"
