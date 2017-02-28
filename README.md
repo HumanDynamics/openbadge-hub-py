@@ -4,9 +4,13 @@ The hub supports two modes:
 
 = docker
 
-Commands:
-* To run the hub in standalone mode, on an Ubuntu machine: docker-compose -f standalone_ubuntu up
-* To run the hub in standalone mode, on a Raspberry Pi with Jessie: docker-compose -f standalone_jessie up
+== Standalone
+To run the hub in standalone mode, first create devices.txt file with a list of MAC address, and then 
+* on an Ubuntu machine: docker-compose -f standalone_ubuntu up
+* on a Raspberry Pi with Jessie: docker-compose -f standalone_jessie up
 
-Other useful commands:
+== Server mode
+TBD
+
+== Other useful commands
 * Gaining shell:  docker-compose -f standalone_ubuntu.yml run openbadge-hub-py /bin/bash
