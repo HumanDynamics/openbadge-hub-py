@@ -1,5 +1,5 @@
 # Pull base image
-FROM FROM resin/rpi-raspbian:jessie
+FROM resin/rpi-raspbian:jessie
 MAINTAINER Oren Lederman orenled@mit.edu
 
 # Install dependencies
