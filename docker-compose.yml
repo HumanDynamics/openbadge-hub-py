@@ -9,12 +9,13 @@ services:
   openbadge-hub-py:
     build:
       context: .
-      dockerfile: ./compose/openbadge-hub-py/Dockerfile
+      dockerfile: ./compose/openbadge-hub-py/Dockerfile_jessie
     volumes:
       - hub_data:/data
       - hub_logs:/logs
       - hub_config:/config
       - /sys/kernel/debug:/sys/kernel/debug
+    entrypoint: ./badge_hub.py
     command: -m server pull
     env_file: .env
     privileged: true

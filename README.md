@@ -1,19 +1,16 @@
-The hub supports two modes:
-* standalone - no server needed. The hub will read a list of badges form the devices.txt file and data will be stored locally. This mode is useful for development, tests and small deployments
-* server - the hub reads list of badges from a openbadge-server and sends data back to the server
-
 = docker
 
-== Standalone
-To run the hub in standalone mode, first create devices.txt file with a list of MAC address, and then 
-* on an Ubuntu machine: docker-compose -f standalone_ubuntu up
-* on a Raspberry Pi with Jessie: docker-compose -f standalone_jessie up
-* If you'd like to run in the background add "-d" to the commands above
+== Development
+For development, you can use the dev_ubuntu.yml (for linux, mac or windows) and dev_jessie.yml (if you are using raspberry pi). For exmaple:
+docker-compose -f dev_ubuntu.yml up
 
-Note - for convenience, we mount the local data, logs and config directories as volumes in docker. This allows easier access to the data generated in this mode.
+By default, docker will start in standalone mode. However, you can override the default parameters using the run command:
+docker-compose -f dev_ubuntu.yml run openbadge-hub-py -m server pull
 
-== Server mode
-TBD
+For convenience, we mount the local data, logs and config directories as volumes in docker. This allows easier access to the data generated in this mode.
+
+== Production
+TBD. Use docker-compose.yml. Don't forget to populate .env (see .env.sample)
 
 == Other useful commands
-* Gaining shell:  docker-compose -f standalone_ubuntu.yml run openbadge-hub-py /bin/bash
+* Gaining shell: docker-compose -f dev_ubuntu.yml run --entrypoint /bin/bash openbadge-hub-py
