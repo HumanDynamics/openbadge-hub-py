@@ -3,14 +3,16 @@
 #
 .idea
 
-# configuration
-device_macs*
+# local configuration
+devices.txt
 .env
 
 # temp files and logs
 scan.txt
 log_proximity.txt
 log_audio.txt
+audio_archive.txt
+proximity_archive.txt
 *.log
 
 # Ansible
