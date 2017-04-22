@@ -14,14 +14,15 @@
       - git
       - libglib2.0-dev # From bluepy
       - python-setuptools # For installing pip
+      - python-pip
       - supervisor # for running the processes as deamons
       - links2 # useful when setting up a device
     become: true
 
-  - name: Installing PIP
-    easy_install:
+  - name: Upgrade pip
+    pip:
       name: pip
-      state: latest
+      extra_args: --upgrade
     become: true
 
   - name: Downloading git repo
@@ -33,7 +34,7 @@
     become: true
 
   - name: Installing docker
-    command: curl -sSL get.docker.com | sh
+    shell: curl -sSL get.docker.com | sh
     args:
       creates: /usr/bin/docker
     become: true
