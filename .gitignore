@@ -14,6 +14,7 @@ log_audio.txt
 audio_archive.txt
 proximity_archive.txt
 *.log
+data/*
 
 # Ansible
 main.retry
