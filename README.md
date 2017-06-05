@@ -51,72 +51,78 @@ For deployment, we are going to assume Raspberry Pi as a platform. The following
 raspberry pi, and then how run the hub code using Docker.
 
 ## Setting up Raspberry Pi
-* Make sure hubs synchronize their dates using NTP (preferably the same NTP server). **No, seriously. Make sure that the
- time on all of your hubs and servers is synchronized**
-* Download the Raspbian lite (2017-04-10-raspbian-jessie-lite.img) and install
-   * On most operating systems, you can use Etcher (https://etcher.io/)
-   * If you are using a Linux command line for installation, you can do the following :
-      * unmount SD card volumes (if there are existing volumes, some machines will auto-mount them)
-      * sudo dd bs=4M if=2017-04-10-raspbian-jessie-lite.img of=/dev/mmcblk0
-      * sync
-   * More insturctions can be found [here](https://www.raspberrypi.org/documentation/installation/installing-images/linux.md).
-* Create private and public keys:
-```
-ssh-keygen -t rsa -b 2048 -C "badgepi-key" -f badgepi-key
-chmod 600 badgepi-key
-```
-* The command will generate two files::
-   * badgepi-key - this one you keep on your computer
-   * badgepi-key.pub - this file will be placed on each of your hubs
+For convenience, we will be using HypriotOS instead of Raspbian. It is easier to configure, and comes with docker
+pre-installed.
 
-* Alter files on SD card before placing it in the raspberry Pi:
-```
-# turn on ssh
-sudo mkdir -p /media/temp_boot ; sudo mount /dev/mmcblk0p1 /media/temp_boot/
-sudo touch /media/temp_boot/ssh
-sudo umount /media/temp_boot
+Download the latest HypriotOS - https://blog.hypriot.com/downloads/ . To make things easy, you should download a version
+that matches the Docker you are running on your own machine.
 
-sudo mkdir -p /media/temp_vol ; sudo mount /dev/mmcblk0p2 /media/temp_vol/
-# Change hostname
-sudo sh -c 'echo badgepi-xx > /media/temp_vol/etc/hostname'
-# Setup SSH keys
-sudo mkdir -p /media/temp_vol/home/pi/.ssh
-sudo cp badgepi-key.pub /media/temp_vol/home/pi/.ssh/authorized_keys
-sudo chmod 750 /media/temp_vol/home/pi/.ssh
-sudo chmod 600 /media/temp_vol/home/pi/.ssh/authorized_keys
-sudo chown -R 1000:1000 /media/temp_vol/home/pi/.ssh
-# Disable connection using password (use keys instead)
-sudo sed -i "s/#PasswordAuthentication yes/PasswordAuthentication no/g" /media/temp_vol/etc/ssh/sshd_config
-sudo umount /media/temp_vol
-sync
+Next, you need to flash the image to a SD card. We will use the flash tool (developed by Hypriot). It supports Mac and
+Linux. Download and install it:
 ```
-* Connect to raspberry pi. You'll need to use the (private) key file you created since we disabled the password login:
-   * ssh -i badgepi-key pi@badgepi-xx
-* run config tool: sudo raspi-config
-   * Expand space
-   * Change password
+curl -O https://raw.githubusercontent.com/hypriot/flash/master/$(uname -s)/flash
+chmod +x flash
+sudo mv flash /usr/local/bin/flash
+```
+
+If it's not working, please follow the more detailed explaination here -
+https://github.com/hypriot/flash/blob/master/README.md
+
+Now we use flash to write the image to your SD card. If you are using Ubuntu, the SD card will likely be /dev/mmcblk0.
+If you are not sure, you can omit the --device flash, and it will show you a list of devices. Also, note that we are
+setting the hostname of the machine using this command
+```
+flash --device /dev/mmcblk0 --hostname badgepi-xx hypriotos-rpi-v1.4.0.img
+```
+
+Note - the flash tool also provides an easy way to setup your wifi. You can read more about it in the [README file]
+(https://github.com/hypriot/flash/blob/master/README.md)
+
+After the flash util is done, place the SD card in your raspberry pi and power it up.
+
+Copy your SSH public key to the raspberry pi. If you don't have a public one, follow [these instructions](
+https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#generating-a-new-ssh-key).
+Note - the default username and password for Hypriot are pirate/hypriot (instead of pi/raspberry):
+```
+ssh-copy-id -oStrictHostKeyChecking=no -oCheckHostIP=no pirate@badgepi-xx
+```
+
+Run the following command to change the id of the operating system (this is required for docker-machine):
+```
+ssh pirate@badgepi-xx sudo sed -i \'s/ID=raspbian/ID=debian/g\' /etc/os-release
+```
+
+Connect to raspberry pi, and run the following commands:
+* ssh pirate@badgepi-xx
+* change your password using passwd
+* change the timezone using sudo dpkg-reconfigure tzdata
 * sudo apt-get update
 * sudo apt-get upgrade
-* sudo dpkg-reconfigure tzdata
-* Double check that your hubs sync their time with a NTP server. Have I mentioned how important that is?
+
+Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
 
 ## Deployment with docker-machine
-Create a .env file (use env.example as a template), and change the server address, port and key:
+Create a .env file (use the env.example file from the root directory as a template) and change the server address, port
+and key:
 * BADGE_SERVER_ADDR : server address (e.g. my.server.com)
 * BADGE_SERVER_PORT : port
 * APPKEY : application authentication key (needs to match APPKEY in your server configuration)
 
-
-Use docker-machine to setup Docker on your raspberry pi:
+Use docker-machine to setup Docker on your raspberry pi (it will use your SSH key to connect):
 '''
-docker-machine create --driver generic --generic-ssh-user <username> --generic-ssh-key <ssh-key-location>
---generic-ip-address <ip-address> <machine-name>
+docker-machine create --engine-storage-driver=overlay --driver generic --generic-ssh-user pirate  --generic-ip-address
+badgepi-xx.yourdomain.com badgepi-xx
 '''
 
-Next, run docker-compose (it will use docker-compose.yml as default) :
+Make the new machine the active machine:
+```
+eval $(docker-machine env badgepi-xx)
+```
+
+Make sure you are in the openbadge-hub-py directoy, and run docker-compose (it will use docker-compose.yml as default) :
 ```
 docker-compose build
-docker-compose up
+docker-compose up -d
 ```
 
 ## Deployment as a swarm
@@ -152,3 +158,42 @@ sudo make install
 ### Raspbian
 For Raspbian, you can follow the procedure described in [stackexchange](http://raspberrypi.stackexchange.com/questions/39254/updating-bluez-5-23-5-36)
  and install a newer version of BlueZ from the stretch sources
+
+## Old instructions on setting up a Raspberry Pi with Raspbian
+Download the Raspbian lite (e.g. 2017-04-10-raspbian-jessie-lite.img) the the offical site.
+
+Install the image on a SD card
+* On most operating systems, you can use Etcher (https://etcher.io/)
+* More instructions can be found [here](https://www.raspberrypi.org/documentation/installation/installing-images/linux.md).
+
+Turn on ssh on raspberry pi
+* Mount the boot partition of the SD Card
+* Create an empty file called ssh
+* Unmount
+
+Change the hostname
+* Mount the main volume
+* Change /etc/hostname
+* Unmount
+
+Copy your SSH public key to the raspberry pi. If you don't have one, follow these instructions
+ - https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#generating-a-new-ssh-key
+```
+ssh-copy-id -oStrictHostKeyChecking=no -oCheckHostIP=no pi@badgepi-xx
+```
+
+Run the following command to change the id of the operating system (this is required for docker-machine):
+```
+ssh pi@badgepi-xx sudo sed -i \'s/ID=raspbian/ID=debian/g\' /etc/os-release
+```
+
+Connect to raspberry pi, and run the following commands:
+* ssh pi@badgepi-xx
+* sudo raspi-config
+   * Expand space
+   * Change password
+* sudo apt-get update
+* sudo apt-get upgrade
+* sudo dpkg-reconfigure tzdata
+
+Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
