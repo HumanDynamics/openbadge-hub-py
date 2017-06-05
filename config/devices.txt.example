@@ -1,2 +1,3 @@
 # For standalone mode, enter list of badges MAC addresses
 #<device> <comment / device description>
+AA:BB:CC:DD:EE:FF My first badge

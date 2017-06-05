@@ -41,9 +41,10 @@ HUB_ENDPOINT = _hub
 def request_headers():
     """ 
     Generate the headers to be used for all requests to server
+    Note - all items must be strings
     """
     return {
         "X-APPKEY": settings.APPKEY,
         "X-HUB-UUID": settings.HUB_UUID,
-        "X-HUB-TIME": time.time()
+        "X-HUB-TIME": str(time.time())
     }
