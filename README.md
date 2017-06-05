@@ -1,6 +1,6 @@
 The (python) hub is used for controlling, monitoring, and communicating with the badges. The code was tested mainly on
 Ubuntu (14 & 16) and Raspbian. In this document, we mostly assume Ubuntu for a development environment, and Raspberry Pi
-(Raspbian) for deployment.
+(Raspbian and HypriotOS) for deployment.
 
 In order to simplify setup and deployment, the hub code can now be wrapped in a Docker container.
 
@@ -57,6 +57,8 @@ pre-installed.
 Download the latest HypriotOS - https://blog.hypriot.com/downloads/ . To make things easy, you should download a version
 that matches the Docker you are running on your own machine.
 
+The default username and password for Hypriot are pirate/hypriot (instead of pi/raspberry)
+
 Next, you need to flash the image to a SD card. We will use the flash tool (developed by Hypriot). It supports Mac and
 Linux. Download and install it:
 ```
@@ -75,14 +77,13 @@ setting the hostname of the machine using this command
 flash --device /dev/mmcblk0 --hostname badgepi-xx hypriotos-rpi-v1.4.0.img
 ```
 
-Note - the flash tool also provides an easy way to setup your wifi. You can read more about it in the [README file]
-(https://github.com/hypriot/flash/blob/master/README.md)
+Note - the flash tool also provides an easy way to setup your wifi. You can read more about it here -
+https://github.com/hypriot/flash/blob/master/README.md
 
 After the flash util is done, place the SD card in your raspberry pi and power it up.
 
-Copy your SSH public key to the raspberry pi. If you don't have a public one, follow [these instructions](
-https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#generating-a-new-ssh-key).
-Note - the default username and password for Hypriot are pirate/hypriot (instead of pi/raspberry):
+Copy your SSH public key to the raspberry pi. If you don't have a public one, follow these instructions
+https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#generating-a-new-ssh-key
 ```
 ssh-copy-id -oStrictHostKeyChecking=no -oCheckHostIP=no pirate@badgepi-xx
 ```
@@ -144,7 +145,7 @@ sudo apt-get upgrade
 sudo apt-get -y install libdbus-1-dev libdbus-glib-1-dev libglib2.0-dev libical-dev libreadline-dev libudev-dev libusb-dev make
 ```
 
-Download and install [BlueZ](http://www.bluez.org/download/) version 5.29 or higher:
+Download and install BlueZ (http://www.bluez.org/download/) version 5.29 or higher:
 ```
 wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.xz
 tar xf bluez-5.37.tar.xz
@@ -156,7 +157,7 @@ sudo make install
 ```
 
 ### Raspbian
-For Raspbian, you can follow the procedure described in [stackexchange](http://raspberrypi.stackexchange.com/questions/39254/updating-bluez-5-23-5-36)
+For Raspbian, you can follow the procedure described in stackexchange (http://raspberrypi.stackexchange.com/questions/39254/updating-bluez-5-23-5-36)
  and install a newer version of BlueZ from the stretch sources
 
 ## Old instructions on setting up a Raspberry Pi with Raspbian
@@ -164,7 +165,7 @@ Download the Raspbian lite (e.g. 2017-04-10-raspbian-jessie-lite.img) the the of
 
 Install the image on a SD card
 * On most operating systems, you can use Etcher (https://etcher.io/)
-* More instructions can be found [here](https://www.raspberrypi.org/documentation/installation/installing-images/linux.md).
+* More instructions can be found here - https://www.raspberrypi.org/documentation/installation/installing-images/linux.md
 
 Turn on ssh on raspberry pi
 * Mount the boot partition of the SD Card
