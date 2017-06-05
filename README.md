@@ -30,8 +30,8 @@ docker-compose -f dev_ubuntu.yml build
 docker-compose -f dev_ubuntu.yml up
 ```
 
-For convenience, we mount the local data, logs and config directories as volumes in docker. This allows easier access
-to the data generated in this mode.
+For convenience, we mount the local source files, data, logs and config directories as volumes in docker. This allows
+faster builds and easier access to the data generated in this mode.
 
 Note - by default, docker will start the hub in standalone mode. However, you can override the command parameters:
 ```

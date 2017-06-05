@@ -5,7 +5,7 @@
 
 # local configuration
 devices.txt
-.env
+.env*
 
 # temp files and logs
 scan.txt

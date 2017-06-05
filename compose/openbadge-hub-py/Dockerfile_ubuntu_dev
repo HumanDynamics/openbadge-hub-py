@@ -1,6 +1,6 @@
 # Based on - https://github.com/don41382/docker-rpi-python3-with-bluetooth
 # Pull base image
-FROM resin/rpi-raspbian:jessie
+FROM ubuntu
 MAINTAINER Oren Lederman orenled@mit.edu
 
 # Install dependencies
@@ -25,9 +25,8 @@ RUN mkdir $LOG_DIR
 ENV CONFIG_DIR /config
 RUN mkdir $CONFIG_DIR
 
-COPY ./src /app
-
-RUN pip install -r /app/requirements.txt
+COPY ./src/requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
 
 # Define working directory
 WORKDIR /app

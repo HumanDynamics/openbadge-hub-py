@@ -14,6 +14,7 @@ from time import time
 from datetime import datetime as dt
 from requests.exceptions import RequestException
 import glob
+import traceback
 
 from badge import *
 from badge_discoverer import BadgeDiscoverer
@@ -139,9 +140,10 @@ def offload_data():
                     archive_file.write(json.dumps(chunk) + "\n")
             os.remove(pending_file_name)
         except RequestException as e:
+            s = traceback.format_exc()
             logger.error("Error sending data from file {} to server!"
                 .format(pending_file_name))
-            logger.error(e)
+            logger.error("{},{}".format(e,s))
             return False
     return True
 

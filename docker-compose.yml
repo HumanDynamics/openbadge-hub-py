@@ -9,7 +9,7 @@ services:
   openbadge-hub-py:
     build:
       context: .
-      dockerfile: ./compose/openbadge-hub-py/Dockerfile_jessie
+      dockerfile: ./compose/openbadge-hub-py/Dockerfile_jessie_prod
     volumes:
       - hub_data:/data
       - hub_logs:/logs
