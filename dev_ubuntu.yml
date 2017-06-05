@@ -4,8 +4,9 @@ services:
   openbadge-hub-py:
     build:
       context: .
-      dockerfile: ./compose/openbadge-hub-py/Dockerfile_ubuntu
+      dockerfile: ./compose/openbadge-hub-py/Dockerfile_ubuntu_dev
     volumes:
+      - ./src:/app
       - ./data:/data
       - ./logs:/logs
       - ./config:/config
