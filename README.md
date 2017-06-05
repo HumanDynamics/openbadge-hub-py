@@ -41,6 +41,10 @@ docker-compose -f dev_ubuntu.yml run openbadge-hub-py -m server pull
 If you choose to run the hub in server more, remember to create a .env file and set the parameters accordingly. See the
 next section for more information.
 
+In order to get an interactive shell for the hub container, you need to overwrite the entrypoint:
+```
+docker-compose -f dev_ubuntu.yml run --entrypoint /bin/bash openbadge-hub-py
+```
 
 # Deployment
 For deployment, we are going to assume Raspberry Pi as a platform. The following sections explain how to setup the
@@ -56,6 +60,15 @@ raspberry pi, and then how run the hub code using Docker.
       * sudo dd bs=4M if=2017-04-10-raspbian-jessie-lite.img of=/dev/mmcblk0
       * sync
    * More insturctions can be found [here](https://www.raspberrypi.org/documentation/installation/installing-images/linux.md).
+* Create private and public keys:
+```
+ssh-keygen -t rsa -b 2048 -C "badgepi-key" -f badgepi-key
+chmod 600 badgepi-key
+```
+* The command will generate two files::
+   * badgepi-key - this one you keep on your computer
+   * badgepi-key.pub - this file will be placed on each of your hubs
+
 * Alter files on SD card before placing it in the raspberry Pi:
 ```
 # turn on ssh
@@ -87,12 +100,24 @@ sync
 * sudo dpkg-reconfigure tzdata
 * Double check that your hubs sync their time with a NTP server. Have I mentioned how important that is?
 
-## hub configuration
-To set it up, create a .env file (use env.example as a template), and change the server address, port and key.
+## Deployment with docker-machine
+Create a .env file (use env.example as a template), and change the server address, port and key:
+* BADGE_SERVER_ADDR : server address (e.g. my.server.com)
+* BADGE_SERVER_PORT : port
+* APPKEY : application authentication key (needs to match APPKEY in your server configuration)
 
-## Deployment using docker-machine
+
+Use docker-machine to setup Docker on your raspberry pi:
+'''
+docker-machine create --driver generic --generic-ssh-user <username> --generic-ssh-key <ssh-key-location>
+--generic-ip-address <ip-address> <machine-name>
+'''
+
 Next, run docker-compose (it will use docker-compose.yml as default) :
-docker-compose up -d
+```
+docker-compose build
+docker-compose up
+```
 
 ## Deployment as a swarm
 TBD
