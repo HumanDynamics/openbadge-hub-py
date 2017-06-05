@@ -5,7 +5,7 @@ import time
 from badge import *
 from server import BADGE_ENDPOINT, BADGES_ENDPOINT, request_headers
 from settings import APPKEY, HUB_UUID
-
+import traceback
 
 class BadgeManagerServer:
     def __init__(self, logger):
@@ -45,7 +45,8 @@ class BadgeManagerServer:
                     raise Exception('Got a {} from the server'.format(response.status_code))
 
             except (requests.exceptions.ConnectionError, Exception) as e:
-                self.logger.error("Error reading badges list from server : {}".format(e))
+                s = traceback.format_exc()
+                self.logger.error("Error reading badges list from server : {}, {}".format(e,s))
                 if not retry:
                     done = True
                 else:
