@@ -173,6 +173,31 @@ class BadgeManagerServer:
         except Exception as e:
             self.logger.error('Error sending updated badge into to server: {}'.format(e))
 
+    def create_badge(self, name, email, mac):
+        """
+        Creates a badge using the giving information
+        :param name: user name
+        :param email: user email
+        :param mac: badge mac
+        :return:
+        """
+        try:
+            data = {
+                'name': name,
+                'email': email,
+                'badge': mac,
+            }
+
+            self.logger.debug("Creating new badge : {}".format(data))
+            response = requests.post(BADGES_ENDPOINT, data=data, headers=request_headers())
+            if response.ok is False:
+                s = traceback.format_exc()
+                raise Exception('Error creating badge {}. Status: {}, Error: {}, {}'.format(data, response.status_code,
+                                                                                             response.text, s))
+        except Exception as e:
+            s = traceback.format_exc()
+            self.logger.error('Error creating new badge. Error: {} ,{}'.format(e,s))
+
     @property
     def badges(self):
         if self._badges is None:

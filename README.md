@@ -129,6 +129,25 @@ docker-compose up -d
 ## Deployment as a swarm
 TBD
 
+# Other useful commands
+## Loading badges from a CSV files
+You can now load a list of badges from a CSV files of the following structure: user name,email address,badge mac . The
+files should have no header row.
+
+This command must be executed from a hub that is recognizable by the server, and the file needs to be copied to the hub
+so it is recognized. therefore, you have two options:
+1. Running a dev hub, and copying the file to a directoy recognized by the hub. For example, if you copy it to the
+config folder, you can run:
+ ```
+docker-compose -f dev_ubuntu.yml run openbadge-hub-py -m server load_badges -f ../config/badges_to_load.csv
+ ```
+2. Another option is to run the command from a production hub. In this case, the easiest way it to copy the file into
+the src directory (since it will be copied to the container), and then run:
+```
+docker-compose build
+docker-compose run openbadge-hub-py -m server load_badges -f badges_to_load.csv
+```
+
 # MISC
 ## Updating BlueZ
 One of the main requirements for the hub is the BlueZ library. Raspbian and Ubuntu already have BlueZ installed, but it

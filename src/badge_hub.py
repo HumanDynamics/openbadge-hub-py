@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import signal
+import csv
 
 import logging
 import json
@@ -499,8 +500,15 @@ def start_all_devices(mgr):
                 else:
                     logger.info("No need to start {}".format(device['mac']))
 
-
         time.sleep(2)  # allow BLE time to disconnect
+
+
+def  load_badges(mgr, csv_file_name):
+    print("Loading badged from: {}".format(csv_file_name))
+    with open(csv_file_name, 'r') as csvfile:
+        badgereader = csv.reader(csvfile, delimiter=',')
+        for row in badgereader:
+            mgr.create_badge(row[0],row[1],row[2])
 
 
 def add_pull_command_options(subparsers):
@@ -509,6 +517,7 @@ def add_pull_command_options(subparsers):
                              , choices=('audio', 'proximity', 'both','none'), required=False
                              , default='both'
                              , dest='start_recording',help='data recording option')
+
 
 def add_scan_command_options(subparsers):
     pull_parser = subparsers.add_parser('scan', help='Continuously scan for badges')
@@ -521,6 +530,12 @@ def add_sync_all_command_options(subparsers):
 def add_start_all_command_options(subparsers):
     st_parser = subparsers.add_parser('start_all', help='Start recording on all devices in whitelist')
 
+
+def add_load_badges_command_options(subparsers):
+    lb_parser = subparsers.add_parser('load_badges', help='Loads badges from a CSVfile')
+    lb_parser.add_argument('-f', '--csv_file', required=True
+                           , type=str
+                           , help='Badges CSV file to load. Structure: name,email,mac_address')
 
 if __name__ == "__main__":
     import time
@@ -540,6 +555,7 @@ if __name__ == "__main__":
     add_scan_command_options(subparsers)
     add_sync_all_command_options(subparsers)
     add_start_all_command_options(subparsers)
+    add_load_badges_command_options(subparsers)
 
     args = parser.parse_args()
 
@@ -561,5 +577,8 @@ if __name__ == "__main__":
 
     if args.mode == "start_all":
         start_all_devices(mgr)
+
+    if args.mode == "load_badges":
+        load_badges(mgr, args.csv_file)
 
     exit(0)
