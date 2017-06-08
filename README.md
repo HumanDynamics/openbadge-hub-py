@@ -141,11 +141,14 @@ config folder, you can run:
  ```
 docker-compose -f dev_ubuntu.yml run openbadge-hub-py -m server load_badges -f ../config/badges_to_load.csv
  ```
-2. Another option is to run the command from a production hub. In this case, the easiest way it to copy the file into
-the src directory (since it will be copied to the container), and then run:
+2. Another option is to run the command from a production hub. In this case, you can use 'docker cp' to copy the file
+into the container, and then run the load_badges command. For example:
 ```
-docker-compose build
-docker-compose run openbadge-hub-py -m server load_badges -f badges_to_load.csv
+docker-compose up  # if not already up
+docker cp config/badges_to_load.csv `docker-compose ps -q openbadge-hub-py`:/config/badges_to_load.csv
+docker-compose down
+docker-compose run openbadge-hub-py -m server load_badges -f ../config/badges_to_load.csv
+docker-compose up -d
 ```
 
 # MISC

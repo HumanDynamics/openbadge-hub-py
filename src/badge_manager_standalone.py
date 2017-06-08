@@ -94,6 +94,7 @@ class BadgeManagerStandalone():
         :param mac: badge mac
         :return:
         """
+        self.logger.debug("Command 'create_badge' is not implemented for standalone mode'")
         pass # not implemented in standalone
 
 

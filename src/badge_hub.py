@@ -503,11 +503,12 @@ def start_all_devices(mgr):
         time.sleep(2)  # allow BLE time to disconnect
 
 
-def  load_badges(mgr, csv_file_name):
-    print("Loading badged from: {}".format(csv_file_name))
+def load_badges(mgr, csv_file_name):
+    logger.info("Loading badged from: {}".format(csv_file_name))
     with open(csv_file_name, 'r') as csvfile:
         badgereader = csv.reader(csvfile, delimiter=',')
         for row in badgereader:
+            logger.info("Asking to create badge: {}".format(row))
             mgr.create_badge(row[0],row[1],row[2])
 
 

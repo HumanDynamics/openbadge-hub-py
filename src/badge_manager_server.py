@@ -188,7 +188,7 @@ class BadgeManagerServer:
                 'badge': mac,
             }
 
-            self.logger.debug("Creating new badge : {}".format(data))
+            self.logger.info("Creating new badge : {}".format(data))
             response = requests.post(BADGES_ENDPOINT, data=data, headers=request_headers())
             if response.ok is False:
                 s = traceback.format_exc()
