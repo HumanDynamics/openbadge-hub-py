@@ -86,6 +86,18 @@ class BadgeManagerStandalone():
         """
         pass # not implemented in standalone
 
+    def create_badge(self, name, email, mac):
+        """
+        Creates a badge using the giving information
+        :param name: user name
+        :param email: user email
+        :param mac: badge mac
+        :return:
+        """
+        self.logger.debug("Command 'create_badge' is not implemented for standalone mode'")
+        pass # not implemented in standalone
+
+
     @property
     def badges(self):
         if self._badges is None:
