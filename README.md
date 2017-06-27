@@ -50,7 +50,7 @@ docker-compose -f dev_ubuntu.yml run --entrypoint /bin/bash openbadge-hub-py
 For deployment, we are going to assume Raspberry Pi as a platform. The following sections explain how to setup the
 raspberry pi, and then how run the hub code using Docker.
 
-## Setting up Raspberry Pi
+## Setting up Raspberry Pi (with Hypriot)
 For convenience, we will be using HypriotOS instead of Raspbian. It is easier to configure, and comes with docker
 pre-installed.
 
@@ -102,6 +102,51 @@ Connect to raspberry pi, and run the following commands:
 
 Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
 
+## Setting up Raspberry Pi using Raspian (For Raspberry Pi Zero W)
+It seems that Hypriot has some issues with Pi Zero W (Bluetooth won't start). Therefore, it's better to use Raspbian
+until they fix the problem.
+
+Download the latest Jessie lite.
+
+The default username and password for Hypriot are pi/raspberry
+
+Now we use flash to write the image to your SD card. If you are using Ubuntu, the SD card will likely be /dev/mmcblk0.
+If you are not sure, you can omit the --device flash, and it will show you a list of devices. Also, note that we are
+setting the hostname of the machine using this command
+```
+flash --device /dev/mmcblk0 2017-04-10-raspbian-jessie-lite.img
+```
+
+Now, we'll need to turn on SSH and change the hostname. We'll do that by altering the following files on the SD card:
+* First, mount the boot partition and main partition
+* Create a file call "ssh" under the book partition
+* Edit /etc/hostname in the main partition and replace "raspberrypi" with your hostname
+* Unmonut both partitions
+
+Place the SD card in your raspberry pi and power it up.
+
+Copy your SSH public key to the raspberry pi. If you don't have a public one, follow these instructions
+https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#generating-a-new-ssh-key
+```
+ssh-copy-id -oStrictHostKeyChecking=no -oCheckHostIP=no pi@badgepi-xx
+```
+
+Run the following command to change the id of the operating system (this is required for docker-machine):
+```
+ssh pi@badgepi-xx sudo sed -i \'s/ID=raspbian/ID=debian/g\' /etc/os-release
+```
+
+Connect to raspberry pi, and run the following commands:
+* ssh pi@badgepi-xx
+* change your password using passwd
+* extend the file system (sudo raspi-config , Advanced -> Expand filesystem), then reboot
+* change the timezone using sudo dpkg-reconfigure tzdata
+* sudo apt-get update
+* sudo apt-get upgrade
+
+Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
+
+
 ## Deployment with docker-machine
 Create a .env file (use the env.example file from the root directory as a template) and change the server address, port
 and key:
@@ -111,8 +156,7 @@ and key:
 
 Use docker-machine to setup Docker on your raspberry pi (it will use your SSH key to connect):
 '''
-docker-machine create --engine-storage-driver=overlay --driver generic --generic-ssh-user pirate  --generic-ip-address
-badgepi-xx.yourdomain.com badgepi-xx
+docker-machine create --engine-storage-driver=overlay --driver generic --generic-ssh-user pi  --generic-ip-address badgepi-xx.yourdomain.com badgepi-xx
 '''
 
 Make the new machine the active machine:
