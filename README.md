@@ -139,8 +139,8 @@ ssh pi@badgepi-xx sudo sed -i \'s/ID=raspbian/ID=debian/g\' /etc/os-release
 Connect to raspberry pi, and run the following commands:
 * ssh pi@badgepi-xx
 * change your password using passwd
-* extend the file system (sudo raspi-config , Advanced -> Expand filesystem), then reboot
-* change the timezone using sudo dpkg-reconfigure tzdata
+* extend the file system (sudo raspi-config --expand-rootfs), then reboot
+* change the timezone (sudo dpkg-reconfigure tzdata)
 * sudo apt-get update
 * sudo apt-get upgrade
 
