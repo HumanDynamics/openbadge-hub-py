@@ -97,7 +97,7 @@ Connect to raspberry pi, and run the following commands:
 * ssh pirate@badgepi-xx
 * change your password using passwd
 * change the timezone using sudo dpkg-reconfigure tzdata
-* sudo apt-get update && sudo apt-get upgrade -y
+* DO NOT RUN update & upgrade before installting docker. It causes issues (sudo apt-get update && sudo apt-get upgrade -y)
 
 Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
 
@@ -140,7 +140,7 @@ Connect to raspberry pi, and run the following commands:
 * change your password using passwd
 * extend the file system (sudo raspi-config --expand-rootfs), then reboot
 * change the timezone (sudo dpkg-reconfigure tzdata)
-* sudo apt-get update && sudo apt-get upgrade -y
+* DO NOT RUN update & upgrade before installting docker. It causes issues (sudo apt-get update && sudo apt-get upgrade -y)
 
 Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
 
@@ -248,7 +248,8 @@ Ingeneral, follow the instructions on how to setup a regular hub, except:
   * Finally press 'w' > Enter to write it
   * Now reboot: sudo shutdown -r now
   * Once its back do the resize: sudo resize2fs /dev/mmcblk0p2
-* Then run update & upgrade, and user docker-machine to install docker dependencies, etc
+* Use docker-machine to install docker dependencies, etc
+* Then run update & upgrade
 * And then save the image
 
 After you create a copy, make sure to:
