@@ -157,6 +157,11 @@ Use docker-machine to setup Docker on your raspberry pi (it will use your SSH ke
 docker-machine create --engine-storage-driver=overlay --driver generic --generic-ssh-user pi  --generic-ip-address badgepi-xx.yourdomain.com badgepi-xx
 '''
 
+Note - in the latest docker version (true for 2017/07/07), there's a bug. Try adding the following to the create command:
+'''
+--engine-install-url=https://web.archive.org/web/20170623081500/https://get.docker.com
+'''
+
 Make the new machine the active machine:
 ```
 eval $(docker-machine env badgepi-xx)
