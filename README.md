@@ -229,6 +229,32 @@ sudo make install
 For Raspbian, you can follow the procedure described in stackexchange (http://raspberrypi.stackexchange.com/questions/39254/updating-bluez-5-23-5-36)
  and install a newer version of BlueZ from the stretch sources
 
+## Notes on how to create an image and copying it on multiple hubs
+Ingeneral, follow the instructions on how to setup a regular hub, except:
+* Do not expand the file system. It seems that HypriotOS and Jessie both expand it automatically. So in order to turn it off, edit /boot/boot/cmdline.txt and remove the call to init=/usr/lib/raspi-config/init_resize.sh
+* Istead, use fdisk to extend it to a smaller partition. You can find more infomration here - http://www.raspberry-projects.com/pi/pi-operating-systems/raspbian/troubleshooting/expand-filesystem-issues . In general:
+  * sudo fdisk /dev/mmcblk0
+  * Then press 'p' to see the current partitions on the disk
+  * Now delete the 2nd partition (it won't actually delete the data on it)
+  * Press 'd' > Enter
+  * Press '2' > Enter
+  * Now re-create it:
+  * Press 'n' > Enter
+  * Press 'p' > Enter
+  * Press '2' > Enter
+  * Enter the First sector and the same value as the original /dev/mmcblk0p2 partition
+  * For the Last sector just press enter to use the maximum value.
+  * Now press 'p' > Enter to see the new partition setup.
+  * Finally press 'w' > Enter to write it
+  * Now reboot: sudo shutdown -r now
+  * Once its back do the resize: sudo resize2fs /dev/mmcblk0p2
+* Then run update & upgrade, and user docker-machine to install docker dependencies, etc
+* And then save the image
+
+After you create a copy, make sure to:
+* Change the hostname
+* Extend the filesystem
+
 ## Old instructions on setting up a Raspberry Pi with Raspbian
 Download the Raspbian lite (e.g. 2017-04-10-raspbian-jessie-lite.img) the the offical site.
 
