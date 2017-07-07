@@ -97,8 +97,7 @@ Connect to raspberry pi, and run the following commands:
 * ssh pirate@badgepi-xx
 * change your password using passwd
 * change the timezone using sudo dpkg-reconfigure tzdata
-* sudo apt-get update
-* sudo apt-get upgrade
+* sudo apt-get update && sudo apt-get upgrade -y
 
 Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
 
@@ -119,7 +118,7 @@ flash --device /dev/mmcblk0 2017-04-10-raspbian-jessie-lite.img
 
 Now, we'll need to turn on SSH and change the hostname. We'll do that by altering the following files on the SD card:
 * First, mount the boot partition and main partition
-* Create a file call "ssh" under the book partition
+* Create a file call "ssh" under the boot partition
 * Edit /etc/hostname in the main partition and replace "raspberrypi" with your hostname
 * Unmonut both partitions
 
@@ -141,8 +140,7 @@ Connect to raspberry pi, and run the following commands:
 * change your password using passwd
 * extend the file system (sudo raspi-config --expand-rootfs), then reboot
 * change the timezone (sudo dpkg-reconfigure tzdata)
-* sudo apt-get update
-* sudo apt-get upgrade
+* sudo apt-get update && sudo apt-get upgrade -y
 
 Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
 
