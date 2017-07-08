@@ -243,14 +243,22 @@ Ingeneral, follow the instructions on how to setup a regular hub, except:
   * Press 'p' > Enter
   * Press '2' > Enter
   * Enter the First sector and the same value as the original /dev/mmcblk0p2 partition
-  * For the Last sector just press enter to use the maximum value.
+  * Set the new size. I used +3G to create a 3GB partition (you'll need some space for building the hub images)
   * Now press 'p' > Enter to see the new partition setup.
   * Finally press 'w' > Enter to write it
   * Now reboot: sudo shutdown -r now
   * Once its back do the resize: sudo resize2fs /dev/mmcblk0p2
 * Use docker-machine to install docker dependencies, etc
 * Then run update & upgrade
-* And then save the image
+
+Then save the image
+* See this post for information - https://raspberrypi.stackexchange.com/questions/8305/how-to-make-an-image-img-from-whats-on-the-sd-card-but-as-compact-as-the-or 
+* make sure partitions are unmounted
+* sudo fdisk -l /dev/mmcblk0
+* sudo dd if=/dev/mmcblk0 of=openbadge-hub-py.img bs=512 count=<END of second partition + 1>
+
+Burn image into a new SD card
+* Use dd, flash or Etcher.io
 
 After you create a copy, make sure to:
 * Change the hostname
