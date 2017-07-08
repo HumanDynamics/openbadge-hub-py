@@ -229,6 +229,13 @@ sudo make install
 For Raspbian, you can follow the procedure described in stackexchange (http://raspberrypi.stackexchange.com/questions/39254/updating-bluez-5-23-5-36)
  and install a newer version of BlueZ from the stretch sources
 
+## How to set the keyboard to a English-US layout
+Go to Localization options, then:
+
+Locale -> remove en_GB, add en_US.UTF-8, then choose enUS.UTF-8 as default
+
+Keyboard layout -> choose a generic keyboard -> in the next list you'll see only UK keyboards. Go down and choose "other" -> Choose English (US) -> Choose English (US) agian
+
 ## Notes on how to create an image and copying it on multiple hubs
 Ingeneral, follow the instructions on how to setup a regular hub, except:
 * Do not expand the file system. It seems that HypriotOS and Jessie both expand it automatically. So in order to turn it off, edit /boot/boot/cmdline.txt and remove the call to init=/usr/lib/raspi-config/init_resize.sh
