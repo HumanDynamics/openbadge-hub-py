@@ -97,8 +97,7 @@ Connect to raspberry pi, and run the following commands:
 * ssh pirate@badgepi-xx
 * change your password using passwd
 * change the timezone using sudo dpkg-reconfigure tzdata
-* sudo apt-get update
-* sudo apt-get upgrade
+* DO NOT RUN update & upgrade before installting docker. It causes issues (sudo apt-get update && sudo apt-get upgrade -y)
 
 Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
 
@@ -119,7 +118,7 @@ flash --device /dev/mmcblk0 2017-04-10-raspbian-jessie-lite.img
 
 Now, we'll need to turn on SSH and change the hostname. We'll do that by altering the following files on the SD card:
 * First, mount the boot partition and main partition
-* Create a file call "ssh" under the book partition
+* Create a file call "ssh" under the boot partition
 * Edit /etc/hostname in the main partition and replace "raspberrypi" with your hostname
 * Unmonut both partitions
 
@@ -139,10 +138,9 @@ ssh pi@badgepi-xx sudo sed -i \'s/ID=raspbian/ID=debian/g\' /etc/os-release
 Connect to raspberry pi, and run the following commands:
 * ssh pi@badgepi-xx
 * change your password using passwd
-* extend the file system (sudo raspi-config , Advanced -> Expand filesystem), then reboot
-* change the timezone using sudo dpkg-reconfigure tzdata
-* sudo apt-get update
-* sudo apt-get upgrade
+* extend the file system (sudo raspi-config --expand-rootfs), then reboot
+* change the timezone (sudo dpkg-reconfigure tzdata)
+* DO NOT RUN update & upgrade before installting docker. It causes issues (sudo apt-get update && sudo apt-get upgrade -y)
 
 Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
 
@@ -157,6 +155,11 @@ and key:
 Use docker-machine to setup Docker on your raspberry pi (it will use your SSH key to connect):
 '''
 docker-machine create --engine-storage-driver=overlay --driver generic --generic-ssh-user pi  --generic-ip-address badgepi-xx.yourdomain.com badgepi-xx
+'''
+
+Note - in the latest docker version (true for 2017/07/07), there's a bug. Try adding the following to the create command:
+'''
+--engine-install-url=https://web.archive.org/web/20170623081500/https://get.docker.com
 '''
 
 Make the new machine the active machine:
@@ -225,6 +228,48 @@ sudo make install
 ### Raspbian
 For Raspbian, you can follow the procedure described in stackexchange (http://raspberrypi.stackexchange.com/questions/39254/updating-bluez-5-23-5-36)
  and install a newer version of BlueZ from the stretch sources
+
+## How to set the keyboard to a English-US layout
+Go to Localization options, then:
+
+Locale -> remove en_GB, add en_US.UTF-8, then choose enUS.UTF-8 as default
+
+Keyboard layout -> choose a generic keyboard -> in the next list you'll see only UK keyboards. Go down and choose "other" -> Choose English (US) -> Choose English (US) agian
+
+## Notes on how to create an image and copying it on multiple hubs
+Ingeneral, follow the instructions on how to setup a regular hub, except:
+* Do not expand the file system. It seems that HypriotOS and Jessie both expand it automatically. So in order to turn it off, edit /boot/boot/cmdline.txt and remove the call to init=/usr/lib/raspi-config/init_resize.sh
+* Istead, use fdisk to extend it to a smaller partition. You can find more infomration here - http://www.raspberry-projects.com/pi/pi-operating-systems/raspbian/troubleshooting/expand-filesystem-issues . In general:
+  * sudo fdisk /dev/mmcblk0
+  * Then press 'p' to see the current partitions on the disk
+  * Now delete the 2nd partition (it won't actually delete the data on it)
+  * Press 'd' > Enter
+  * Press '2' > Enter
+  * Now re-create it:
+  * Press 'n' > Enter
+  * Press 'p' > Enter
+  * Press '2' > Enter
+  * Enter the First sector and the same value as the original /dev/mmcblk0p2 partition
+  * Set the new size. I used +3G to create a 3GB partition (you'll need some space for building the hub images)
+  * Now press 'p' > Enter to see the new partition setup.
+  * Finally press 'w' > Enter to write it
+  * Now reboot: sudo shutdown -r now
+  * Once its back do the resize: sudo resize2fs /dev/mmcblk0p2
+* Use docker-machine to install docker dependencies, etc
+* Then run update & upgrade
+
+Then save the image
+* See this post for information - https://raspberrypi.stackexchange.com/questions/8305/how-to-make-an-image-img-from-whats-on-the-sd-card-but-as-compact-as-the-or 
+* make sure partitions are unmounted
+* sudo fdisk -l /dev/mmcblk0
+* sudo dd if=/dev/mmcblk0 of=openbadge-hub-py.img bs=512 count=<END of second partition + 1>
+
+Burn image into a new SD card
+* Use dd, flash or Etcher.io
+
+After you create a copy, make sure to:
+* Change the hostname
+* Extend the filesystem
 
 ## Old instructions on setting up a Raspberry Pi with Raspbian
 Download the Raspbian lite (e.g. 2017-04-10-raspbian-jessie-lite.img) the the offical site.
