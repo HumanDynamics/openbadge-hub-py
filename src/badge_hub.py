@@ -504,12 +504,20 @@ def start_all_devices(mgr):
 
 
 def load_badges(mgr, csv_file_name):
-    logger.info("Loading badged from: {}".format(csv_file_name))
+    logger.info("Loading badges from: {}".format(csv_file_name))
     with open(csv_file_name, 'r') as csvfile:
         badgereader = csv.reader(csvfile, delimiter=',')
         for row in badgereader:
             logger.info("Asking to create badge: {}".format(row))
             mgr.create_badge(row[0],row[1],row[2])
+
+
+def print_badges(mgr):
+    logger.info("Printing badges:")
+    mgr.pull_badges_list()
+    badge_list = mgr.badges
+    for key, value in badge_list.iteritems():
+        print("{},{}".format(value.key,value.addr))
 
 
 def add_pull_command_options(subparsers):
@@ -538,6 +546,11 @@ def add_load_badges_command_options(subparsers):
                            , type=str
                            , help='Badges CSV file to load. Structure: name,email,mac_address')
 
+
+def add_print_badges_command_options(subparsers):
+    lb_parser = subparsers.add_parser('print_badges', help='print badges in a CSV format')
+
+
 if __name__ == "__main__":
     import time
     import argparse
@@ -557,6 +570,7 @@ if __name__ == "__main__":
     add_sync_all_command_options(subparsers)
     add_start_all_command_options(subparsers)
     add_load_badges_command_options(subparsers)
+    add_print_badges_command_options(subparsers)
 
     args = parser.parse_args()
 
@@ -581,5 +595,8 @@ if __name__ == "__main__":
 
     if args.mode == "load_badges":
         load_badges(mgr, args.csv_file)
+
+    if args.mode == "print_badges":
+        print_badges(mgr)
 
     exit(0)
