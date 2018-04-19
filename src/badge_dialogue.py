@@ -14,4 +14,3 @@ class BadgeDialogue():
         :param badge:
         """
         self.badge = badge
-

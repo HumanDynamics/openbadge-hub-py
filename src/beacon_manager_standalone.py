@@ -3,16 +3,16 @@ import os
 import re
 import logging
 import requests
-from server import BADGE_ENDPOINT, BADGES_ENDPOINT, request_headers
+from server import BEACON_ENDPOINT, BEACONS_ENDPOINT, request_headers
 from badge import Badge,now_utc_epoch
 from settings import DATA_DIR, LOG_DIR, CONFIG_DIR
 
-devices_file = CONFIG_DIR + 'devices.txt'
+devices_file = CONFIG_DIR + 'devices_beacon.txt'
 
 
-class BadgeManagerStandalone():
+class BeaconManagerStandalone():
     def __init__(self, logger,timestamp):
-        self._badges= None
+        self._beacons= None
         self.logger = logger
         self._device_file = devices_file
 
@@ -57,72 +57,70 @@ class BadgeManagerStandalone():
         for d in devices:
             self.logger.debug("    {}".format(d))
 
-        badges = {mac: Badge(mac,
+        beacons = {mac: Badge(mac,
                                        self.logger,
                                        key=mac,  # using mac as key since no other key exists
                                        badge_id=int(mac_id_map[mac][0]),
                                        project_id=int(mac_id_map[mac][1]),
-                                       init_audio_ts_int=self._init_ts,
-                                       init_audio_ts_fract=self._init_ts_fract,
-                                       init_proximity_ts=self._init_ts,
                                        ) for mac in mac_id_map.keys()    
                         }
 
-        return badges
+        return beacons
 
-    def pull_badges_list(self):
+    def pull_beacons_list(self):
         # first time we read as is
-        if self._badges is None:
-            file_badges = self._read_file(self._device_file)
-            self._badges = file_badges
+        if self._beacons is None:
+            file_beacons = self._read_file(self._device_file)
+            self._beacons = file_beacons
         else:
             # update list
-            file_badges = self._read_file(self._device_file)
-            for mac in file_badges:
-                if mac not in self._badges:
+            file_beacons = self._read_file(self._device_file)
+            for mac in file_beacons:
+                if mac not in self._beacons:
                     # new badge
                     self.logger.debug("Found new badge in file: {}".format(mac))
-                    self._badges[mac] = file_badges[mac]
+                    self._beacons[mac] = file_beacons[mac]
 
-    def pull_badge(self, mac):
+    def pull_beacon(self, mac):
         """
-        Contacts to server (if responding) and updates the given badge data
+        Contacts to server (if responding) and updates the given pull_beacon data
         :param mac:
         :return:
         """
         pass # not implemented
 
-    def send_badge(self, mac):
+    def send_beacon(self, mac):
         """
-        Sends timestamps of the given badge to the server
+        Sends timestamps of the given beacon to the server
         :param mac:
         :return:
         """
         pass # not implemented in standalone
 
-    def create_badge(self, name, email, mac):
+    def create_beacon(self, name, mac , beacon_id ,project_id):
         """
-        Creates a badge using the giving information
+        Creates a beacon using the giving information
         :param name: user name
-        :param email: user email
-        :param mac: badge mac
+        :param mac: beacon mac
+        :param beacon_id: beacon_id
+        :param project_id: project_id
         :return:
         """
-        self.logger.debug("Command 'create_badge' is not implemented for standalone mode'")
+        self.logger.debug("Command 'create_beacon' is not implemented for standalone mode'")
         pass # not implemented in standalone
 
     @property
-    def badges(self):
-        if self._badges is None:
-            raise Exception('Badges list has not been initialized yet')
-        return self._badges
+    def beacons(self):
+        if self._beacons is None:
+            raise Exception('Beacons list has not been initialized yet')
+        return self._beacons
 
 
 if __name__ == "__main__":
     logging.basicConfig()
-    logger = logging.getLogger('badge_server')
+    logger = logging.getLogger('beacon_server')
     logger.setLevel(logging.DEBUG)
 
-    mgr = BadgeManagerStandalone(logger=logger,timestamp=1520270000)
-    mgr.pull_badges_list()
-    print(mgr.badges)
+    mgr = BeaconManagerStandalone(logger=logger,timestamp=1520270000)
+    mgr.pull_beacons_list()
+    print(mgr.beacons)

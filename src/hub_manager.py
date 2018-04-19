@@ -23,6 +23,7 @@ def get_uuid():
     """
     return socket.gethostname()
 
+
 def register_hub():
     """
     Registers current computer as a hub
@@ -110,6 +111,7 @@ def pull_hubs_list(logger):
     server_hubs = _read_hubs_list_from_server(logger, retry=False)
     return server_hubs
 
+
 def _get_project_id(logger):
     resp = requests.request("GET", PROJECTS_ENDPOINT, headers=request_headers())
     if resp.status_code == 200:
@@ -119,6 +121,7 @@ def _get_project_id(logger):
         #I don't think this is likely to ever happen, at least
         logger.error("Error getting project key from server, status code: {}"
             .format(resp.status_code))
+
 
 def send_data_to_server(logger, data_type, data):
     """

@@ -10,7 +10,7 @@ import traceback
 from bluepy import btle
 
 
-class BadgeDiscoverer:
+class BadgeDiscoverer(object):
     """
     Scan for badges
     """
@@ -24,7 +24,7 @@ class BadgeDiscoverer:
 
     def __init__(self,logger):
         self.logger = logger
-
+        
     def discover(self, scan_duration = 1): #seconds
         btle.Debugging = False
         scanner = btle.Scanner().withDelegate(ScanDummy())
@@ -42,6 +42,7 @@ class BadgeDiscoverer:
                     mac = scan_item.addr.upper()
                     scan_date = datetime.datetime.now()
                     adv_payload = self.unpack_broadcast_data(scan_item.rawData)
+
                     if not (mac in scan_items):
                         scan_items[mac] = {'scan_date':scan_date,'rssi':rssi,'adv_payload':adv_payload}
                     else:
@@ -95,7 +96,7 @@ class BadgeDiscoverer:
                     adv_payload['status_flags'] = payload[2]
                     adv_payload['badge_id'] = payload[3]
                     adv_payload['project_id'] = payload[4]
-
+                    
                     # Check if the 1st bit is set
                     sync_status = 1 if adv_payload['status_flags'] & 0b1 > 0 else 0
                     adv_payload['sync_status'] = sync_status
@@ -121,6 +122,13 @@ class BadgeDiscoverer:
 class ScanDummy(btle.DefaultDelegate):
     def handleDiscovery(self, dev, is_new_dev, is_new_data):
         pass
+
+
+class BeaconDiscoverer(BadgeDiscoverer):
+    
+    def __init__(self,logger):
+        super(BeaconDiscoverer, self).__init__(logger)
+
 
 if __name__ == "__main__":
     import logging

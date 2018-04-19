@@ -16,6 +16,7 @@ from math import floor
 import datetime
 import signal
 import traceback
+import time
 
 WAIT_FOR = 1.0  # timeout for WaitForNotification calls.  Must be > samplePeriod of badge
 PULL_WAIT = 2
@@ -27,6 +28,7 @@ SCAN_WINDOW = 100
 SCAN_INTERVAL = 300
 SCAN_DURATION = 5 # how long each scan lasts
 SCAN_PERIOD = 60 # how often to run a scan
+
 
 class TimeoutError(Exception):
     """
@@ -54,8 +56,10 @@ class timeout:
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
 
+
 class Expect:
     none,status,timestamp,header,samples,scanHeader,scanDevices = range(7)
+
 
 class Chunk():
     """
@@ -151,7 +155,8 @@ class BadgeDelegate(DefaultDelegate):
     timestamp_sec = None # badge time in seconds
     timestamp_ms = None  # fractional part of badge time
     voltage = None       # badge battery voltage
-
+    badge_id = None #badge id
+    project_id = None #project id
     timestamp = None # badge time as timestamp (includes seconds+milliseconds)
 
     def __init__(self, params):
@@ -213,7 +218,7 @@ class BadgeDelegate(DefaultDelegate):
         elif self.expected == Expect.scanHeader:
             self.tempScan.reset()
             header = struct.unpack('<LfB',data)
-            self.tempScan.setHeader(header) #time, voltage, number of devices
+            self.tempScan.setHeader(header) #timestamp_sec, voltage, number of devices
             #print self.tempScan.ts
             if (self.tempScan.ts == 0): # got an empty header? done
                 self.gotEndOfScans = True
@@ -272,8 +277,28 @@ class Badge:
     children = {}
 
     @property
+    def badge_id(self):
+        return self.badge_id
+
+    @property
+    def observed_id(self):
+        return self.observed_id
+
+    @property   
+    def project_id(self):
+        return self.project_id    
+
+    @property
     def last_proximity_ts(self):
         return self.__last_proximity_ts
+
+    @property
+    def last_contacted_ts(self):
+        return self.__last_contacted_ts
+
+    @property
+    def last_unsync_ts(self):
+        return self.__last_unsync_ts
 
     @property
     def last_voltage(self):
@@ -284,6 +309,18 @@ class Badge:
         if value < self.__last_proximity_ts:
             raise ValueError('Trying to last_proximity_ts with an old value')
         self.__last_proximity_ts = value
+
+    @last_contacted_ts.setter
+    def last_contacted_ts(self, value):
+        if value < self.__last_contacted_ts:
+            raise ValueError('Trying to last_contacted_ts with an old value')
+        self.__last_contacted_ts = value
+
+    @last_unsync_ts.setter
+    def last_unsync_ts(self, value):
+        if value < self.__last_unsync_ts:
+            raise ValueError('Trying to last_contacted_ts with an old value')
+        self.__last_unsync_ts = value
 
     @property
     def last_audio_ts_int(self):
@@ -328,13 +365,16 @@ class Badge:
             # no value is set yetyet
             return True
 
-    def __init__(self, addr,logger, key, init_audio_ts_int=None, init_audio_ts_fract=None, init_proximity_ts=None, init_voltage=None):
+    def __init__(self,addr,logger, key,badge_id,project_id, init_audio_ts_int=None, init_audio_ts_fract=None, init_proximity_ts=None, init_voltage=None, init_contact_ts=None,init_unsync_ts=None, observed_id=None):
         #if self.children.get(key):
         #    return self.children.get(key)
-        self.children[key] = self
-        self.key = key
+        self.children[key] = self        
+        self.key = key        
         self.addr = addr
         self.logger = adapter = BadgeAddressAdapter(logger, {'addr': addr})
+        self.badge_id = badge_id
+        self.project_id = project_id
+        self.observed_id = observed_id
         self.dlg = None
         self.conn = None
         self.connDialogue = BadgeDialogue(self)
@@ -344,6 +384,8 @@ class Badge:
 
         self.set_audio_ts(init_audio_ts_int, init_audio_ts_fract)
         self.__last_proximity_ts = init_proximity_ts
+        self.__last_contacted_ts = init_contact_ts
+        self.__last_unsync_ts = init_unsync_ts
 
     def connect(self):
         self.logger.info("Connecting to {}".format(self.addr))
@@ -359,9 +401,11 @@ class Badge:
 
     # sends status request with UTC time to the badge
     def sendStatusRequest(self):
-        long_epoch_seconds, ts_fract = now_utc_epoch()
-        self.dlg.expected = Expect.status
-        return self.conn.write('<cLH',"s",long_epoch_seconds,ts_fract)
+        long_epoch_seconds, ts_fract = now_utc_epoch()               
+        self.dlg.expected = Expect.status       
+        return self.conn.write('<cLHHB',"s",long_epoch_seconds,ts_fract,int(self.badge_id), int(self.project_id))
+        #return self.conn.write('<cLH',"s",long_epoch_seconds,ts_fract)
+
 
     # sends request to start recording, with specified timeout
     #   (if after timeout minutes badge has not seen server, it will stop recording)
@@ -426,15 +470,15 @@ class Badge:
 
             with timeout(seconds=5, error_message="Status request timeout (wrong firmware version?)"):
                 while not self.dlg.gotStatus:
+                    self.logger.info("Setting Badge id : {} , and project id : {}".format(self.badge_id, self.project_id))
                     self.sendStatusRequest()  # ask for status
                     self.conn.waitForNotifications(WAIT_FOR)  # waiting for status report
 
-                    self.logger.info("Got status")
-
-                    self.sendIdentifyReq(10)
+                self.logger.info("Got status")
+                self.sendIdentifyReq(5)
 
                 if self.dlg.timestamp_sec != 0:
-                    self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
+                    self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))                    
                 else:
                     self.logger.info("Badge previously unsynced.")
 
@@ -524,6 +568,22 @@ class Badge:
                 self.connect()
 
             self.logger.info("Connected")
+            self.last_contacted_ts=time.time()
+            
+            # Sending status (and setting ids)
+            self.logger.info("Sending status request (Badge id : {} , project id : {})".format(self.badge_id, self.project_id))
+            with timeout(seconds=5, error_message="StartusRequest timeout (wrong firmware version?)"):
+                while not self.dlg.gotStatus:
+                    self.sendStatusRequest()  # start recording
+                    self.conn.waitForNotifications(WAIT_FOR)  # waiting for time acknowledgement
+
+                self.logger.info("Got time ack")
+
+                if self.dlg.timestamp_sec != 0:
+                    self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
+                else:
+                    self.logger.info("Badge previously unsynced.")
+                    self.last_unsync_ts = time.time()
 
             if activate_audio:
                 # Starting audio rec
@@ -539,6 +599,8 @@ class Badge:
                         self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
                     else:
                         self.logger.info("Badge previously unsynced.")
+                        self.last_unsync_ts = time.time()
+                        
 
             # Reset flag (hacky)
             self.dlg.gotTimestamp = False
@@ -557,7 +619,7 @@ class Badge:
                         self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
                     else:
                         self.logger.info("Badge previously unsynced.")
-
+                        last_unsync_ts = time.time()
 
             # audio data data request since time X
             self.logger.info("Requesting data since {} {}".format(self.last_audio_ts_int, self.last_audio_ts_fract))
@@ -608,7 +670,7 @@ class Badge:
 
         return retcode
 
-
+    
 def print_bytes(data):
     """
     Prints a given string as an array of unsigned bytes
@@ -666,6 +728,7 @@ def ts_and_fract_to_float(ts_int,ts_fract):
     """
     return ts_int + (ts_fract / 1000.0)
 
+
 if __name__ == "__main__":
     print("Basic conversion tests")
     print("Int and fraction to float")
@@ -694,10 +757,11 @@ if __name__ == "__main__":
     #logger = logging.getLogger("Test")
     #logger.setLevel(logging.DEBUG)
 
-    b = Badge("AAAAA",logger,"ABCDE",100,10,100)
+    b = Badge("AAAAA",logger,"ABCDE",100,10,100,1,250)
+   
     print(b.last_audio_ts_int,b.last_audio_ts_fract)
     b.set_audio_ts(110,1)
     print(b.last_audio_ts_int, b.last_audio_ts_fract)
-    b.set_audio_ts(100,1)
-    print(b.last_audio_ts_int, b.last_audio_ts_fract)
+   # b.set_audio_ts(100,1)
+   # print(b.last_audio_ts_int, b.last_audio_ts_fract)
 

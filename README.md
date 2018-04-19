@@ -20,8 +20,16 @@ do not apply these changes to non-raspberry pi machines
 operating systems
 
 # Development / Standalone mode
-To use the hub in standalone mode, create a files called "devices.txt" under the config directory and add the MAC
-addresses of your badges. You can use the "devices.txt.example" as a reference for the file structure.
+To use the hub in standalone mode, you need to create two files under the config folder
+* devices.txt - list of member badges. These badges will collect proximity and audio data
+* devices_beacon.txt - list of beacons badges. These badges will only broadcast their IDs
+
+You can refer to "devices.txt.example" and "devices_beacons.txt.example" as a reference for the file structure.
+Important notes:
+* Make sure you provide all members and beacons with the same project id (otherwise they will not see each other)
+* By convention, member badges should have an id between 1 and 15999. Beacon ids should be between 16000 and 32000
+* Choose different project ids for different projects that are running at the same time. This will prevent id conflicts
+* For project id, pick a number between 1 and 254. Avoid using project id 0 since this is the default value for ibeacons
 
 Next, use docker-compose to run the hub itself. You can either use the dev_ubuntu.yml (for linux, mac or windows) or
 dev_jessie.yml (if you are using raspberry pi). For example:
@@ -178,56 +186,16 @@ TBD
 
 # Other useful commands
 ## Loading badges from a CSV files
-You can now load a list of badges from a CSV files of the following structure: user name,email address,badge mac . The
-files should have no header row.
-
-This command must be executed from a hub that is recognizable by the server, and the file needs to be copied to the hub
-so it is recognized. therefore, you have two options:
-1. Running a dev hub, and copying the file to a directoy recognized by the hub. For example, if you copy it to the
-config folder, you can run:
- ```
-docker-compose -f dev_ubuntu.yml run openbadge-hub-py -m server load_badges -f ../config/badges_to_load.csv
- ```
-2. Another option is to run the command from a production hub. In this case, you can use 'docker cp' to copy the file
-into the container, and then run the load_badges command. For example:
-```
-docker-compose up  # if not already up
-docker cp config/badges_to_load.csv `docker-compose ps -q openbadge-hub-py`:/config/badges_to_load.csv
-docker-compose down
-docker-compose run openbadge-hub-py -m server load_badges -f ../config/badges_to_load.csv
-docker-compose up -d
-```
+This feature is no longer available as a hub command. Instead, use the django admin tool to import badges.
 
 # MISC
-## Updating BlueZ
-One of the main requirements for the hub is the BlueZ library. Raspbian and Ubuntu already have BlueZ installed, but it
- is very old. While it seems to
-
-### Ubuntu
-For Ubuntu, you are likely to need to install it from the source. Here's the procedure we have been using. It's been
-tested on  Ubuntu 14.04 and seems to be working well.
-
-Install dependencies:
+## Notes on BlueZ
+One of the main requirements for the hub is the BlueZ library. Newer version of Ubuntu and Raspbian include a somewhat
+new version of BlueZ, so just make sure you use a recent release and ensure BlueZ version is >= 5.29. To check which
+version you are using, type:
 ```
-sudo apt-get update
-sudo apt-get upgrade
-sudo apt-get -y install libdbus-1-dev libdbus-glib-1-dev libglib2.0-dev libical-dev libreadline-dev libudev-dev libusb-dev make
+bluetoothd --version
 ```
-
-Download and install BlueZ (http://www.bluez.org/download/) version 5.29 or higher:
-```
-wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.xz
-tar xf bluez-5.37.tar.xz
-cd bluez-5.37
-mkdir release
-./configure --disable-systemd
-make -j4
-sudo make install
-```
-
-### Raspbian
-For Raspbian, you can follow the procedure described in stackexchange (http://raspberrypi.stackexchange.com/questions/39254/updating-bluez-5-23-5-36)
- and install a newer version of BlueZ from the stretch sources
 
 ## How to set the keyboard to a English-US layout
 Go to Localization options, then:

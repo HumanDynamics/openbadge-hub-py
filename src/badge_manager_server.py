@@ -3,7 +3,7 @@ import requests
 import time
 
 from badge import *
-from server import BADGE_ENDPOINT, BADGES_ENDPOINT, request_headers
+from server import BADGE_ENDPOINT, BADGES_ENDPOINT, BEACON_ENDPOINT, BEACONS_ENDPOINT, request_headers
 from settings import APPKEY, HUB_UUID
 import traceback
 
@@ -17,10 +17,15 @@ class BadgeManagerServer:
         return Badge(d.get('badge'),
                     self.logger,
                     d.get('key'),
+                    badge_id = d.get('id'),
+                    project_id = d.get('advertisement_project_id'),
                     init_audio_ts_int=conv(d.get('last_audio_ts')),
                     init_audio_ts_fract=conv(d.get('last_audio_ts_fract')),
                     init_proximity_ts=conv(d.get('last_proximity_ts')),
-                    init_voltage=d.get('last_voltage')
+                    init_voltage=d.get('last_voltage'),
+                    init_contact_ts = d.get('last_contacted_ts'),
+                    init_unsync_ts = d.get('last_unsync_ts')
+
         )
 
     def _read_badges_list_from_server(self, retry=True, retry_delay_sec=5):
@@ -39,7 +44,9 @@ class BadgeManagerServer:
                 if response.ok:
                     self.logger.info("Updating devices list ({})...".format(len(response.json())))
                     for d in response.json():
-                        server_badges[d.get('badge')] = self._jason_badge_to_object(d)
+                        if(d.get('active')==True):
+                            server_badges[d.get('badge')] = self._jason_badge_to_object(d)
+
                     done = True
                 else:
                     raise Exception('Got a {} from the server'.format(response.status_code))
@@ -86,6 +93,8 @@ class BadgeManagerServer:
     def _update_badge_with_server_badge(self,badge,server_badge):
         """
         Updates the timestamp of the given badge if the given server badge has more recent timestamps
+        When running multiple hubs in the same project, a different hub might have updated these values
+        already. Therefore, we need to pull the latest values.
         :param badge:
         :param server_badge:
         :return:
@@ -93,6 +102,8 @@ class BadgeManagerServer:
         mac = badge.addr
         server_ts_int = server_badge.last_audio_ts_int
         server_ts_fract = server_badge.last_audio_ts_fract
+        server_ts_last_contacted = server_badge.last_contacted_ts
+        server_ts_last_unsync = server_badge.last_unsync_ts
         if badge.is_newer_audio_ts(server_ts_int, server_ts_fract):
             #self.logger.debug("Updating {} with new audio timestamp: {} {}"
             #                  .format(mac, server_ts_int, server_ts_fract))
@@ -112,6 +123,20 @@ class BadgeManagerServer:
             #self.logger.debug("Keeping existing proximity timestamp for {}. Server value was: {}"
             #                  .format(mac, server_proximity_ts))
             pass
+
+        if server_ts_last_contacted > badge.last_contacted_ts:
+            badge.last_contacted_ts = server_ts_last_contacted
+        else:
+            pass
+
+        if server_ts_last_unsync > badge.last_unsync_ts:
+            badge.last_unsync_ts = server_ts_last_unsync
+        else:
+            pass
+
+        # updates project id and badge id
+        badge.badge_id = server_badge.badge_id
+        badge.project_id = server_badge.project_id
 
     def pull_badges_list(self):
         # first time we read from server
@@ -154,12 +179,15 @@ class BadgeManagerServer:
         """
         try:
             badge = self._badges[mac]
-            data = {
+            data = {            
+                'observed_id': badge.observed_id,
                 'last_audio_ts': badge.last_audio_ts_int,
                 'last_audio_ts_fract': badge.last_audio_ts_fract,
                 'last_proximity_ts': badge.last_proximity_ts,
                 'last_voltage': badge.last_voltage,
                 'last_seen_ts': badge.last_seen_ts,
+                'last_contacted_ts': badge.last_contacted_ts,
+                'last_unsync_ts': badge.last_unsync_ts
             }
 
             self.logger.debug("Sending update badge data to server, badge {} : {}".format(badge.key, data))
@@ -173,7 +201,7 @@ class BadgeManagerServer:
         except Exception as e:
             self.logger.error('Error sending updated badge into to server: {}'.format(e))
 
-    def create_badge(self, name, email, mac):
+    def create_badge(self, name, email, mac ):
         """
         Creates a badge using the giving information
         :param name: user name
@@ -198,17 +226,20 @@ class BadgeManagerServer:
             s = traceback.format_exc()
             self.logger.error('Error creating new badge. Error: {} ,{}'.format(e,s))
 
+
+
     @property
     def badges(self):
         if self._badges is None:
             raise Exception('Badges list has not been initialized yet')
         return self._badges
 
+
 if __name__ == "__main__":
     logging.basicConfig()
     logger = logging.getLogger('badge_server')
     logger.setLevel(logging.DEBUG)
-
+    
     mgr = BadgeManagerServer(logger=logger)
     mgr.pull_badges_list()
     print(mgr.badges)

@@ -18,6 +18,16 @@ if BADGE_SERVER_PORT is None:
     print("BADGE_SERVER_PORT is not set")
     sys.exit(1)
 
+BEACON_SERVER_ADDR = os.environ.get("BADGE_SERVER_ADDR")
+if BEACON_SERVER_ADDR is None:
+    print("BADGE_SERVER_ADDR is not set")
+    sys.exit(1)
+
+BEACON_SERVER_PORT = os.environ.get("BADGE_SERVER_PORT")
+if BADGE_SERVER_PORT is None:
+    print("BADGE_SERVER_PORT is not set")
+    sys.exit(1)
+
 APPKEY = os.environ.get("APPKEY")
 if APPKEY is None:
     print("APPKEY is not set")

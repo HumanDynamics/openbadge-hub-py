@@ -1,0 +1,5 @@
+# For standalone mode, enter list of badges MAC addresses
+# By convention, beacons should use ids between 16000 and 32000
+#<device> <badge_id> <project_id> <comment/ device description>
+#F7:FE:84:7E:F6:25 16000 50 first_beacon
+#E0:B9:02:2A:CC:2F 16001 50 second_beacon

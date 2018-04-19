@@ -7,6 +7,7 @@ SERVER = 'http://'+settings.BADGE_SERVER_ADDR+':'+settings.BADGE_SERVER_PORT+'/'
 PROJECTS_ENDPOINT = '{}projects'.format(SERVER)
 BADGES_ENDPOINT = '{}badges/'.format(SERVER)
 HUBS_ENDPOINT = '{}hubs/'.format(SERVER)
+BEACONS_ENDPOINT = '{}beacons/'.format(SERVER)
 DATAFILES_ENDPOINT = "{}{}".format(SERVER, "{}/datafiles")
 
 def _badge(x):
@@ -16,6 +17,14 @@ def _badge(x):
     :return:
     """
     return '{}{}/'.format(BADGES_ENDPOINT, x)
+
+def _beacon(x):
+    """
+    Generates endpoint for a given beacon
+    :param x:
+    :return:
+    """
+    return '{}{}/'.format(BEACONS_ENDPOINT, x)
 
 
 def _hub(x):
@@ -35,6 +44,7 @@ def _data(x):
     return DATAFILES_ENDPOINT.format(x)
 
 BADGE_ENDPOINT = _badge
+BEACON_ENDPOINT = _beacon
 DATA_ENDPOINT = _data
 HUB_ENDPOINT = _hub
 
