@@ -26,8 +26,8 @@ RECORDING_TIMEOUT = 3*60 # minutes
 # Scan settings. See documentation for more details
 SCAN_WINDOW = 100
 SCAN_INTERVAL = 300
-SCAN_DURATION = 5 # how long each scan lasts
-SCAN_PERIOD = 60 # how often to run a scan
+SCAN_DURATION = 3 # how long each scan lasts
+SCAN_PERIOD = 15 # how often to run a scan
 
 
 class TimeoutError(Exception):
