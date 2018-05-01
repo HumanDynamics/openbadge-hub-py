@@ -288,7 +288,7 @@ def dialogue(bdg, activate_audio, activate_proximity, mode="server"):
         logger.info("No proximity scans ready")
 
 
-def scan_for_devices(devices_whitelist):
+def scan_for_devices(devices_whitelist, show_all=False):
     bd = BadgeDiscoverer(logger)
     try:
         all_devices = bd.discover(scan_duration=SCAN_DURATION)
@@ -302,14 +302,15 @@ def scan_for_devices(devices_whitelist):
             logger.debug("\033[1;7m\033[1;32mFound {}, added. Device info: {}\033[0m".format(addr, device_info))
             scanned_devices.append({'mac':addr,'device_info':device_info})
         else:
-            #logger.debug("Found {}, but not on whitelist. Device info: {}".format(addr, device_info))
+            if show_all:
+                logger.debug("Found {}, but not on whitelist. Device info: {}".format(addr, device_info))
             pass
 
     time.sleep(2)  # requires sometimes to prevent connection from failing
     return scanned_devices
 
 
-def scan_for_bc_devices(devices_whitelist):
+def scan_for_bc_devices(devices_whitelist, show_all=False):
     bc = BeaconDiscoverer(logger)
     try:
         all_bc_devices = bc.discover(scan_duration=SCAN_DURATION)
@@ -323,7 +324,8 @@ def scan_for_bc_devices(devices_whitelist):
             logger.debug("\033[1;7m\033[1;32mFound {}, added. Device info: {}\033[0m".format(addr, device_info))
             scanned_bc_devices.append({'mac':addr,'device_info':device_info})
         else:
-            #logger.debug("Found {}, but not on whitelist. Device info: {}".format(addr, device_info))
+            if show_all:
+                logger.debug("Found {}, but not on whitelist. Device info: {}".format(addr, device_info))
             pass
 
     time.sleep(2)  # requires sometimes to prevent connection from failing
@@ -513,6 +515,7 @@ def sync_all_devices(mgr):
     logger.info('Syncing all badges recording.')
     mgr.pull_badges_list()
     for mac in mgr.badges:
+
         bdg = mgr.badges.get(mac)
         bdg.sync_timestamp()
         time.sleep(2)  # requires sleep between devices
@@ -520,14 +523,14 @@ def sync_all_devices(mgr):
     time.sleep(2)  # allow BLE time to disconnect
 
 
-def devices_scanner(mgr,mgrb):
+def devices_scanner(mgr, mgrb, show_all=False):
     logger.info('Scanning for badges')
     mgr.pull_badges_list()
     logger.info('Scanning for beacons')
     mgrb.pull_beacons_list()
     while True:
         logger.info("Scanning for devices...")
-        scanned_devices = scan_for_devices(mgr.badges.keys()) + scan_for_bc_devices(mgrb.beacons.keys())
+        scanned_devices = scan_for_devices(mgr.badges.keys(), show_all) + scan_for_bc_devices(mgrb.beacons.keys())
 
         with open(scans_file_name, "a") as fout:
             for device in scanned_devices:
@@ -614,7 +617,8 @@ def add_pull_command_options(subparsers):
 
 
 def add_scan_command_options(subparsers):
-    pull_parser = subparsers.add_parser('scan', help='Continuously scan for badges')
+    scan_parser = subparsers.add_parser('scan', help='Continuously scan for badges')
+    scan_parser.add_argument('-a','--show_all', action='store_true', default=False, help="Show all devices")
 
 
 def add_sync_all_command_options(subparsers):
@@ -662,7 +666,7 @@ if __name__ == "__main__":
 
     # scan for devices
     if args.mode == "scan":
-        devices_scanner(mgr,mgrb)
+        devices_scanner(mgr,mgrb, args.show_all)
 
     # pull data from all devices
     if args.mode == "pull":

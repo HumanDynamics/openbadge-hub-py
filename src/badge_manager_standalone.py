@@ -6,6 +6,7 @@ import requests
 from server import BADGE_ENDPOINT, BADGES_ENDPOINT, request_headers
 from badge import Badge,now_utc_epoch
 from settings import DATA_DIR, LOG_DIR, CONFIG_DIR
+import collections
 
 devices_file = CONFIG_DIR + 'devices.txt'
 
@@ -43,30 +44,29 @@ class BadgeManagerStandalone():
             devices = []
 
             for line in devices_macs:
-                    if not line.lstrip().startswith('#'):
-                        device_details = line.split()
-                        devices.append(device_details[0])
-                        badge_project_ids.append(device_details[1:3])
-                    
-        
-        #mapping badge id and project id to mac address
-        mac_id_map = {}    
-        for i in range(len(devices)):
-            mac_id_map[devices[i]] = badge_project_ids[i]
-        
+                if not line.lstrip().startswith('#'):
+                    device_details = line.split()
+                    devices.append(
+                        {"mac": device_details[0],
+                         "badge_id": device_details[1],
+                         "project_id": device_details[2],
+                        })
+
         for d in devices:
             self.logger.debug("    {}".format(d))
 
-        badges = {mac: Badge(mac,
-                                       self.logger,
-                                       key=mac,  # using mac as key since no other key exists
-                                       badge_id=int(mac_id_map[mac][0]),
-                                       project_id=int(mac_id_map[mac][1]),
-                                       init_audio_ts_int=self._init_ts,
-                                       init_audio_ts_fract=self._init_ts_fract,
-                                       init_proximity_ts=self._init_ts,
-                                       ) for mac in mac_id_map.keys()    
-                        }
+        badges = {device["mac"]: Badge(device["mac"],
+                            self.logger,
+                            key=device["mac"],  # using mac as key since no other key exists
+                            badge_id=int(device["badge_id"]),
+                            project_id=int(device["project_id"]),
+                            init_audio_ts_int=self._init_ts,
+                            init_audio_ts_fract=self._init_ts_fract,
+                            init_proximity_ts=self._init_ts,
+                            ) for device in devices
+        }
+
+        badges = collections.OrderedDict(sorted(badges.items(), key=lambda t: t[1].badge_id))
 
         return badges
 
