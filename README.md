@@ -59,6 +59,7 @@ For deployment, we are going to assume Raspberry Pi as a platform. The following
 raspberry pi, and then how run the hub code using Docker.
 
 ## Setting up Raspberry Pi (with Hypriot)
+(Might not work well with Raspberry Pi Zero W. Bluetooth has issues)
 For convenience, we will be using HypriotOS instead of Raspbian. It is easier to configure, and comes with docker
 pre-installed.
 
@@ -151,6 +152,16 @@ Connect to raspberry pi, and run the following commands:
 * DO NOT RUN update & upgrade before installting docker. It causes issues (sudo apt-get update && sudo apt-get upgrade -y)
 
 Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
+
+Now, latest versions os docker-machine has some issues with raspbian - docker-machine will fail without an obvious error. To fix it, you'll need to do the following:
+
+```
+ssh pi@badgepi-xx sudo sed -i \'s/ID=debian/ID=raspbian/g\' /etc/os-release
+ssh pi@badgepi-xx sudo 'curl -sSL https://get.docker.com | sh'
+ssh pi@badgepi-xx sudo sed -i \'s/ID=raspbian/ID=debian/g\' /etc/os-release
+```
+
+Then follow the instructions below for setting up with docker-machine.
 
 
 ## Deployment with docker-machine
