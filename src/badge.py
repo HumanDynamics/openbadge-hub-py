@@ -666,7 +666,11 @@ class Badge:
             s = traceback.format_exc()
             self.logger.error("unexpected failure, {} ,{}".format(e, s))
         finally:
-           self.disconnect()
+            try:
+                self.disconnect()
+            except Exception as e:
+                s = traceback.format_exc()
+                self.logger.error("Failed to disconnect. {} ,{}".format(e, s))
 
         return retcode
 
