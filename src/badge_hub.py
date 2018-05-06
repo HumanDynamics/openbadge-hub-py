@@ -42,7 +42,7 @@ PROXIMITY = "proximity"
 SCAN_DURATION = 3  # seconds
 
 #NOTE try to keep under 100MB or so due to memory constraints
-MAX_PENDING_FILE_SIZE = 20000000 # in bytes, so 20MB
+MAX_PENDING_FILE_SIZE = 15000000 # in bytes, so 15MB
 
 # create logger with 'badge_server'
 logger = logging.getLogger('badge_server')
@@ -87,9 +87,10 @@ def offload_data():
     #TODO test with standalone
     #NOTE not currently doing anything with the True/False
     # return values, might decide to do something later
-    pending_files = glob.glob(pending_file_prefix + "*")
+    pending_files = sorted(glob.glob(pending_file_prefix + "*"))
     for pending_file_name in pending_files:
-        
+        logger.debug("Sending {} to server".format(pending_file_name))
+
         if not has_chunks(pending_file_name):
             continue
 
@@ -104,7 +105,7 @@ def offload_data():
         try:
             chunks_written = hub_manager.send_data_to_server(logger, data_type, chunks)
             if chunks_written == len(chunks):
-                logger.info("Successfully wrote {} data entries to server"
+                logger.debug("Successfully wrote {} data entries to server"
                     .format(len(chunks)))
             else:
                 # this seems unlikely to happen but is good to keep track of i guess
