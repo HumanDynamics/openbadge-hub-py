@@ -452,8 +452,8 @@ def pull_devices(mgr, mgrb, start_recording):
                 observed_project_id = device['device_info']['adv_payload']['project_id']
                 if b.observed_id != b.badge_id or b.project_id != observed_project_id:
                     logger.debug("Warning! Observed IDs do not match server settings. "
-                                 "member_id:{} observed id:{}. project_id: {} observed id:{}"
-                                 .format(b.observed_id,b.badge_id,b.project_id,observed_project_id))
+                                 "Observed: member_id:{}, project_id:{}. Expected: member_id:{}. project_id: {}"
+                                 .format(b.observed_id,observed_project_id,b.badge_id,b.project_id))
 
             b.last_seen_ts = time.time()
 
@@ -486,8 +486,8 @@ def pull_devices(mgr, mgrb, start_recording):
                 observed_project_id = device['device_info']['adv_payload']['project_id']
                 if bcn.observed_id != bcn.badge_id or bcn.project_id != observed_project_id:
                     logger.debug("Warning! Observed IDs do not match server settings. "
-                                 "beacon_id:{} observed id:{}. project_id: {} observed id:{}"
-                                 .format(bcn.observed_id,bcn.badge_id,bcn.project_id,observed_project_id))
+                                 "Observed: beacon_id:{}, project_id:{}. Expected: beacon_id:{}. project_id: {}"
+                                 .format(bcn.observed_id,observed_project_id,bcn.badge_id,bcn.project_id))
 
             bcn.last_seen_ts = time.time()
                        
