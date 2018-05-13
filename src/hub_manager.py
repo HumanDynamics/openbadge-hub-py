@@ -15,7 +15,8 @@ from server import request_headers
 from urllib import quote_plus
 
 SLEEP_WAIT_SEC = 60 # 1 minute
-
+LONG_TIMEOUT = (9.05, 900)
+DEFAULT_TIMEOUT = (9.05, 15)
 
 def get_uuid():
     """
@@ -54,7 +55,7 @@ def send_hub_ip():
         }
 
         logger.debug("Sending update to server: {}".format(data))
-        response = requests.patch(HUB_ENDPOINT(encoded_hostname), data=data)
+        response = requests.patch(HUB_ENDPOINT(encoded_hostname), data=data, timeout=DEFAULT_TIMEOUT)
         if response.ok is False:
             raise Exception('Server sent a {} status code instead of 200: {}'.format(response.status_code,
                                                                                          response.text))
@@ -86,7 +87,7 @@ def _read_hubs_list_from_server(logger, retry=True, retry_delay_sec=5):
     while not done:
         try:
             logger.info("Requesting devices from server...")
-            response = requests.get(HUBS_ENDPOINT)
+            response = requests.get(HUBS_ENDPOINT, timeout=DEFAULT_TIMEOUT)
             if response.ok:
                 logger.info("Updating hubs list ({})...".format(len(response.json())))
                 for d in response.json():
@@ -113,7 +114,7 @@ def pull_hubs_list(logger):
 
 
 def _get_project_id(logger):
-    resp = requests.request("GET", PROJECTS_ENDPOINT, headers=request_headers())
+    resp = requests.request("GET", PROJECTS_ENDPOINT, headers=request_headers(), timeout=DEFAULT_TIMEOUT)
     if resp.status_code == 200:
         return resp.json()["key"]
     else:
@@ -143,7 +144,7 @@ def send_data_to_server(logger, data_type, data):
         "chunks": data
     }
     url = DATA_ENDPOINT(project_id) 
-    response = requests.request("POST", url, data=json.dumps(payload), headers=headers)
+    response = requests.request("POST", url, data=json.dumps(payload), headers=headers, timeout=LONG_TIMEOUT)
     response.raise_for_status() 
     return response.json()["chunks_written"]
 

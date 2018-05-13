@@ -8,6 +8,8 @@ from settings import APPKEY, HUB_UUID
 import traceback
 
 class BadgeManagerServer:
+    DEFAULT_TIMEOUT = (9.05, 15)
+
     def __init__(self, logger):
         self._badges = None
         self.logger = logger
@@ -40,7 +42,7 @@ class BadgeManagerServer:
         while not done:
             try:
                 self.logger.info("Requesting devices from server...")
-                response = requests.get(BADGES_ENDPOINT, headers=request_headers())
+                response = requests.get(BADGES_ENDPOINT, headers=request_headers(), timeout=self.DEFAULT_TIMEOUT)
                 if response.ok:
                     self.logger.info("Updating devices list ({})...".format(len(response.json())))
                     for d in response.json():
@@ -73,7 +75,7 @@ class BadgeManagerServer:
         while not done:
             try:
                 self.logger.info("Requesting device {} from server...".format(badge_key))
-                response = requests.get(BADGE_ENDPOINT(badge_key), headers=request_headers())
+                response = requests.get(BADGE_ENDPOINT(badge_key), headers=request_headers(), timeout=self.DEFAULT_TIMEOUT)
                 if response.ok:
                     #self.logger.debug("Received ({})...".format(response.json()))
                     return self._jason_badge_to_object(response.json())
@@ -191,7 +193,8 @@ class BadgeManagerServer:
             }
 
             self.logger.debug("Sending update badge data to server, badge {} : {}".format(badge.key, data))
-            response = requests.patch(BADGE_ENDPOINT(badge.key), data=data, headers=request_headers())
+            response = requests.patch(
+                BADGE_ENDPOINT(badge.key), data=data, headers=request_headers(), timeout=self.DEFAULT_TIMEOUT)
             if response.ok is False:
                 if response.status_code == 400:
                     self.logger.debug("Server had more recent date, badge {} : {}".format(badge.key, response.text))
@@ -217,7 +220,8 @@ class BadgeManagerServer:
             }
 
             self.logger.info("Creating new badge : {}".format(data))
-            response = requests.post(BADGES_ENDPOINT, data=data, headers=request_headers())
+            response = requests.post(
+                BADGES_ENDPOINT, data=data, headers=request_headers(), timeout=self.DEFAULT_TIMEOUT)
             if response.ok is False:
                 s = traceback.format_exc()
                 raise Exception('Error creating badge {}. Status: {}, Error: {}, {}'.format(data, response.status_code,

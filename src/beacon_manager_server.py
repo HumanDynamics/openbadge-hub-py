@@ -9,6 +9,7 @@ import traceback
 
 
 class BeaconManagerServer:
+    DEFAULT_TIMEOUT = (9.05, 15)
 
     def __init__(self, logger):
         self._beacons = None
@@ -37,7 +38,7 @@ class BeaconManagerServer:
         while not done:
             try:
                 self.logger.info("Requesting devices from server...")
-                response = requests.get(BEACONS_ENDPOINT, headers=request_headers())
+                response = requests.get(BEACONS_ENDPOINT, headers=request_headers(), timeout=self.DEFAULT_TIMEOUT)
                 if response.ok:
                     self.logger.info("Updating beacons list ({})...".format(len(response.json())))
                     for d in response.json():
@@ -69,7 +70,8 @@ class BeaconManagerServer:
         while not done:
             try:
                 self.logger.info("Requesting device {} from server...".format(beacon_key))
-                response = requests.get(BEACON_ENDPOINT(beacon_key), headers=request_headers())
+                response = requests.get(
+                    BEACON_ENDPOINT(beacon_key), headers=request_headers(), timeout=self.DEFAULT_TIMEOUT)
                 if response.ok:
                     #self.logger.debug("Received ({})...".format(response.json()))
                     return self._jason_beacon_to_object(response.json())
@@ -143,7 +145,8 @@ class BeaconManagerServer:
             }
 
             self.logger.debug("Sending update beacon data to server, beacon {} : {}".format(beacon.key, data))
-            response = requests.patch(BEACON_ENDPOINT(beacon.key), data=data, headers=request_headers())
+            response = requests.patch(
+                BEACON_ENDPOINT(beacon.key), data=data, headers=request_headers(), timeout=self.DEFAULT_TIMEOUT)
             if response.ok is False:
                 if response.status_code == 400:
                     self.logger.debug("Server had more recent date, beacon {} : {}".format(beacon.key, response.text))
@@ -171,7 +174,8 @@ class BeaconManagerServer:
             }
 
             self.logger.info("Creating new beacon : {}".format(data))
-            response = requests.post(BEACONS_ENDPOINT, data=data, headers=request_headers())
+            response = requests.post(
+                BEACONS_ENDPOINT, data=data, headers=request_headers(), timeout=self.DEFAULT_TIMEOUT)
             if response.ok is False:
                 s = traceback.format_exc()
                 raise Exception('Error creating beacon {}. Status: {}, Error: {}, {}'.format(data, response.status_code,
