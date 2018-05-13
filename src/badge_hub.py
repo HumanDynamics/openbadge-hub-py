@@ -16,6 +16,7 @@ from datetime import datetime as dt
 from requests.exceptions import RequestException
 import glob
 import traceback
+import random
 
 from badge import *
 from badge_discoverer import BadgeDiscoverer, BeaconDiscoverer
@@ -440,6 +441,9 @@ def pull_devices(mgr, mgrb, start_recording):
         logger.info("Scanning for members...")
         scanned_devices = scan_for_devices(mgr.badges.keys())
 
+        # Randomly shuffle devices
+        random.shuffle(scanned_devices)
+
         # iterate before the actual data collection loop just to offload
         # voltages to the server (and update heartbeat on server)
         for device in scanned_devices:
@@ -472,9 +476,11 @@ def pull_devices(mgr, mgrb, start_recording):
 
             time.sleep(2)  # requires sleep between devices
 
-
         logger.info("Scanning for beacons...")
         scanned_beacons = scan_for_bc_devices(mgrb.beacons.keys())
+
+        # Randomly shuffle devices
+        random.shuffle(scanned_beacons)
 
         # iterate before the actual data collection loop just to offload
         # voltages to the server (and update heartbeat on server)
