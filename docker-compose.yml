@@ -21,3 +21,14 @@ services:
     env_file: .env
     privileged: true
     network_mode: "host"
+
+  back-that-up:
+    build:
+      context: .
+      dockerfile: ./compose/back-that-up/Dockerfile
+    env_file: .env
+    volumes:
+      - hub_data:/data/data:ro
+      - hub_logs:/data/logs:ro
+    restart: always
+    entrypoint: ./entrypoint.sh

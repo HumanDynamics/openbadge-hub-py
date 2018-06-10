@@ -1,0 +1,15 @@
+FROM resin/rpi-raspbian:jessie
+MAINTAINER Jordan Reedie jreedie@mit.edu
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update && apt-get install -y \
+    tzdata \
+    python \
+    python-pip \
+    cron && \
+    pip install awscli
+
+COPY ./compose/back-that-up/entrypoint.sh /
+COPY ./compose/back-that-up/backup.sh /
+
+RUN chmod +x /entrypoint.sh /backup.sh

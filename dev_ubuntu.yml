@@ -16,3 +16,14 @@ services:
     env_file: .env
     privileged: true
     network_mode: "host"
+
+  back-that-up:
+    build:
+      context: .
+      dockerfile: ./compose/back-that-up/Dockerfile_ubuntu
+    env_file: .env
+    volumes:
+      - ./data:/data/data:ro
+      - ./logs:/data/logs:ro
+    restart: always
+    entrypoint: ./entrypoint.sh
