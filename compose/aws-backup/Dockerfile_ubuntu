@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     cron && \
     pip install awscli
 
-COPY ./compose/back-that-up/entrypoint.sh /
-COPY ./compose/back-that-up/backup.sh /
+COPY ./compose/aws-backup/entrypoint.sh /
+COPY ./compose/aws-backup/backup.sh /
 
 RUN chmod +x /entrypoint.sh /backup.sh

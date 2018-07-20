@@ -22,10 +22,10 @@ services:
     privileged: true
     network_mode: "host"
 
-  back-that-up:
+  aws-backup:
     build:
       context: .
-      dockerfile: ./compose/back-that-up/Dockerfile
+      dockerfile: ./compose/aws-backup/Dockerfile
     env_file: .env
     volumes:
       - hub_data:/data/data:ro

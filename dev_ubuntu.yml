@@ -17,10 +17,10 @@ services:
     privileged: true
     network_mode: "host"
 
-  back-that-up:
+  aws-backup:
     build:
       context: .
-      dockerfile: ./compose/back-that-up/Dockerfile_ubuntu
+      dockerfile: ./compose/aws-backup/Dockerfile_ubuntu
     env_file: .env
     volumes:
       - ./data:/data/data:ro
