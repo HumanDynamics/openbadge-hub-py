@@ -23,7 +23,7 @@ services:
       dockerfile: ./compose/aws-backup/Dockerfile_ubuntu
     env_file: .env
     volumes:
-      - ./data:/data/data:ro
-      - ./logs:/data/logs:ro
+      - ./data:/data:ro
+      - ./logs:/logs:ro
     restart: always
     entrypoint: ./entrypoint.sh

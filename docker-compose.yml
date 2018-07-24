@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 
 volumes:
   hub_data: {}
@@ -28,7 +28,8 @@ services:
       dockerfile: ./compose/aws-backup/Dockerfile
     env_file: .env
     volumes:
-      - hub_data:/data/data:ro
-      - hub_logs:/data/logs:ro
+      - hub_data:/data:ro
+      - hub_logs:/logs:ro
     restart: always
     entrypoint: ./entrypoint.sh
+    network_mode: "host"
