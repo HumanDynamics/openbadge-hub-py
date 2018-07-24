@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 
 volumes:
   hub_data: {}
@@ -20,4 +20,16 @@ services:
     command: -m server pull
     env_file: .env
     privileged: true
+    network_mode: "host"
+
+  aws-backup:
+    build:
+      context: .
+      dockerfile: ./compose/aws-backup/Dockerfile
+    env_file: .env
+    volumes:
+      - hub_data:/data:ro
+      - hub_logs:/logs:ro
+    restart: always
+    entrypoint: ./entrypoint.sh
     network_mode: "host"

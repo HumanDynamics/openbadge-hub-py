@@ -16,3 +16,14 @@ services:
     env_file: .env
     privileged: true
     network_mode: "host"
+
+  aws-backup:
+    build:
+      context: .
+      dockerfile: ./compose/aws-backup/Dockerfile_ubuntu
+    env_file: .env
+    volumes:
+      - ./data:/data:ro
+      - ./logs:/logs:ro
+    restart: always
+    entrypoint: ./entrypoint.sh
