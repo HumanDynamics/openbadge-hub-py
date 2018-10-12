@@ -186,6 +186,11 @@ class BadgeDelegate(DefaultDelegate):
 
         self.timestamp = None # badge time as timestamp (includes seconds+milliseconds)
 
+    def saveTempScan(self):
+        # add scan with tempScan's data to list
+        # when a scan completes we always expect another scan header after
+        self.scans.append(Scan(self.tempScan.getHeader(), self.tempScan.devices))
+
     def handleNotification(self, cHandle, data):
         if self.expected == Expect.status:  # whether we expect a status packet
             self.dataReady = True
@@ -211,11 +216,20 @@ class BadgeDelegate(DefaultDelegate):
             sample_arr = struct.unpack('<%dB' % len(data),data) # Nrfuino bytes are unsigned bytes
             self.tempChunk.addData(sample_arr)
             if self.tempChunk.completed():
-                #add chunk with tempChunk's data to list
-                #print self.tempChunk.ts, self.tempChunk.samples
+                # add chunk with tempChunk's data to list
+                # print self.tempChunk.ts, self.tempChunk.samples
                 self.chunks.append(Chunk(self.tempChunk.getHeader(),self.tempChunk.samples))
                 self.expected = Expect.header  #we should move on to a new chunk
         elif self.expected == Expect.scanHeader:
+            if len(data) == 0:
+                # in one implementation of the badge firmware it sends an empty buffer
+                # after a scan with no devices, and in another it does not
+                # see issue #38
+                # if we have received an empty buffer,
+                # we exit early because we wrote our data already
+                # we expect a scanHeader again next packet
+                return
+
             self.tempScan.reset()
             header = struct.unpack('<LfB',data)
             self.tempScan.setHeader(header) #timestamp_sec, voltage, number of devices
@@ -223,24 +237,34 @@ class BadgeDelegate(DefaultDelegate):
             if (self.tempScan.ts == 0): # got an empty header? done
                 self.gotEndOfScans = True
                 self.expected = Expect.none
-                pass
+            elif self.tempScan.numDevices == 0:
+                # write empty scan and move to next
+                # we do this here to support both old and
+                # new implementations of the badge protocol (see issue #38)
+                self.tempScan.addDevices([])
+                self.saveTempScan()
+                self.expected = Expect.scanHeader
             else:
                 self.expected = Expect.scanDevices
 
         elif self.expected == Expect.scanDevices: # just devices
+
+            # is there a reason we do this instead of check the scan header?
+            # also should we do some sanity checking?
             num_devices = int(len(data)/4)
+
             raw_arr = struct.unpack('<' + num_devices * 'Hbb',data)
 
             tuple_arr = zip(raw_arr[0::3],raw_arr[1::3],raw_arr[2::3])
             device_arr = [SeenDevice(params) for params in tuple_arr]
             self.tempScan.addDevices(device_arr)
             if self.tempScan.completed():
-                #add scan with tempScan's data to list
-                #print self.tempScan.ts, self.tempChunk.devices
-                self.scans.append(Scan(self.tempScan.getHeader(),self.tempScan.devices))
-                self.expected = Expect.scanHeader  #we should move on to a new chunk
+                # we're done with this, write scan and continue
+                self.saveTempScan()
+                self.expected = Expect.scanHeader
         else:  # not expecting any data from badge
             print("Error: not expecting data")
+
 
 
 class BadgeConnection(Nrf):
@@ -455,6 +479,16 @@ class Badge:
         self.dlg.expected = Expect.scanHeader
         return self.conn.write('<cL',"b",ts)
 
+    def check_if_synced(self, recordUnsync=True):
+        # NOTE - this only works after a status request
+        if not self.dlg.clockSet:
+            self.logger.info("Badge previously unsynced.")
+            if recordUnsync:
+                self.last_unsync_ts = time.time()
+
+        # log badge datetime regardless - may be useful to know after unsync
+        self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
+
     def sync_timestamp(self):
         """
         used for sync the date of the badge
@@ -477,10 +511,8 @@ class Badge:
                 self.logger.info("Got status")
                 self.sendIdentifyReq(5)
 
-                if self.dlg.timestamp_sec != 0:
-                    self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))                    
-                else:
-                    self.logger.info("Badge previously unsynced.")
+                # got status - check if badge is synced or not
+                self.check_if_synced(recordUnsync=False)
 
             retcode = 0
 
@@ -520,10 +552,7 @@ class Badge:
 
                 self.logger.info("Got time ack")
 
-                if self.dlg.timestamp_sec != 0:
-                    self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
-                else:
-                    self.logger.info("Badge previously unsynced.")
+                self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
 
             # Reset flag (hacky)
             self.dlg.gotTimestamp = False
@@ -537,10 +566,7 @@ class Badge:
 
                 self.logger.info("Got time ack")
 
-                if self.dlg.timestamp_sec != 0:
-                    self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
-                else:
-                    self.logger.info("Badge previously unsynced.")
+                self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
 
             retcode = 0
 
@@ -579,11 +605,9 @@ class Badge:
 
                 self.logger.info("Got time ack")
 
-                if self.dlg.timestamp_sec != 0:
-                    self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
-                else:
-                    self.logger.info("Badge previously unsynced.")
-                    self.last_unsync_ts = time.time()
+                # got status back - check if the badge was synced or not
+                self.check_if_synced()
+
 
             if activate_audio:
                 # Starting audio rec
@@ -595,12 +619,7 @@ class Badge:
 
                     self.logger.info("Got time ack")
 
-                    if self.dlg.timestamp_sec != 0:
-                        self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
-                    else:
-                        self.logger.info("Badge previously unsynced.")
-                        self.last_unsync_ts = time.time()
-                        
+                    self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
 
             # Reset flag (hacky)
             self.dlg.gotTimestamp = False
@@ -615,11 +634,7 @@ class Badge:
 
                     self.logger.info("Got time ack")
 
-                    if self.dlg.timestamp_sec != 0:
-                        self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
-                    else:
-                        self.logger.info("Badge previously unsynced.")
-                        last_unsync_ts = time.time()
+                    self.logger.info("Badge datetime was: {},{}".format(self.dlg.timestamp_sec, self.dlg.timestamp_ms))
 
             # audio data data request since time X
             self.logger.info("Requesting data since {} {}".format(self.last_audio_ts_int, self.last_audio_ts_fract))
