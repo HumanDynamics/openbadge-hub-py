@@ -308,9 +308,9 @@ class Badge:
     def observed_id(self):
         return self.observed_id
 
-    @property   
+    @property
     def project_id(self):
-        return self.project_id    
+        return self.project_id
 
     @property
     def last_proximity_ts(self):
@@ -323,6 +323,10 @@ class Badge:
     @property
     def last_unsync_ts(self):
         return self.__last_unsync_ts
+
+    @property
+    def last_seen_ts(self):
+        return self.__last_seen_ts
 
     @property
     def last_voltage(self):
@@ -389,11 +393,11 @@ class Badge:
             # no value is set yetyet
             return True
 
-    def __init__(self,addr,logger, key,badge_id,project_id, init_audio_ts_int=None, init_audio_ts_fract=None, init_proximity_ts=None, init_voltage=None, init_contact_ts=None,init_unsync_ts=None, observed_id=None):
+    def __init__(self,addr,logger, key,badge_id,project_id, init_audio_ts_int=None, init_audio_ts_fract=None, init_proximity_ts=None, init_voltage=None, init_contact_ts=None,init_unsync_ts=None, init_seen_ts=None, observed_id=None):
         #if self.children.get(key):
         #    return self.children.get(key)
-        self.children[key] = self        
-        self.key = key        
+        self.children[key] = self
+        self.key = key
         self.addr = addr
         self.logger = adapter = BadgeAddressAdapter(logger, {'addr': addr})
         self.badge_id = badge_id
@@ -410,6 +414,7 @@ class Badge:
         self.__last_proximity_ts = init_proximity_ts
         self.__last_contacted_ts = init_contact_ts
         self.__last_unsync_ts = init_unsync_ts
+        self.__last_seen_ts = init_seen_ts
 
     def connect(self):
         self.logger.info("Connecting to {}".format(self.addr))
@@ -425,8 +430,8 @@ class Badge:
 
     # sends status request with UTC time to the badge
     def sendStatusRequest(self):
-        long_epoch_seconds, ts_fract = now_utc_epoch()               
-        self.dlg.expected = Expect.status       
+        long_epoch_seconds, ts_fract = now_utc_epoch()
+        self.dlg.expected = Expect.status
         return self.conn.write('<cLHHB',"s",long_epoch_seconds,ts_fract,int(self.badge_id), int(self.project_id))
         #return self.conn.write('<cLH',"s",long_epoch_seconds,ts_fract)
 
@@ -595,7 +600,7 @@ class Badge:
 
             self.logger.info("Connected")
             self.last_contacted_ts=time.time()
-            
+
             # Sending status (and setting ids)
             self.logger.info("Sending status request (Badge id : {} , project id : {})".format(self.badge_id, self.project_id))
             with timeout(seconds=5, error_message="StartusRequest timeout (wrong firmware version?)"):
@@ -689,7 +694,7 @@ class Badge:
 
         return retcode
 
-    
+
 def print_bytes(data):
     """
     Prints a given string as an array of unsigned bytes
@@ -777,7 +782,7 @@ if __name__ == "__main__":
     #logger.setLevel(logging.DEBUG)
 
     b = Badge("AAAAA",logger,"ABCDE",100,10,100,1,250)
-   
+
     print(b.last_audio_ts_int,b.last_audio_ts_fract)
     b.set_audio_ts(110,1)
     print(b.last_audio_ts_int, b.last_audio_ts_fract)

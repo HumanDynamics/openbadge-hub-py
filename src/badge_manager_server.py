@@ -92,72 +92,8 @@ class BadgeManagerServer:
 
         return None
 
-    def _update_badge_with_server_badge(self,badge,server_badge):
-        """
-        Updates the timestamp of the given badge if the given server badge has more recent timestamps
-        When running multiple hubs in the same project, a different hub might have updated these values
-        already. Therefore, we need to pull the latest values.
-        :param badge:
-        :param server_badge:
-        :return:
-        """
-        mac = badge.addr
-        server_ts_int = server_badge.last_audio_ts_int
-        server_ts_fract = server_badge.last_audio_ts_fract
-        server_ts_last_contacted = server_badge.last_contacted_ts
-        server_ts_last_unsync = server_badge.last_unsync_ts
-        if badge.is_newer_audio_ts(server_ts_int, server_ts_fract):
-            #self.logger.debug("Updating {} with new audio timestamp: {} {}"
-            #                  .format(mac, server_ts_int, server_ts_fract))
-            badge.set_audio_ts(server_ts_int, server_ts_fract)
-        else:
-            #self.logger.debug("Keeping existing timestamp for {}. Server values were: {} {}"
-            #                  .format(mac, server_ts_int, server_ts_fract))
-            pass
-
-        # proximity
-        server_proximity_ts = server_badge.last_proximity_ts
-        if server_proximity_ts > badge.last_proximity_ts:
-            #self.logger.debug("Updating {} with new proximity timestamp: {}".format(mac, server_proximity_ts))
-            badge.last_proximity_ts = server_proximity_ts
-
-        else:
-            #self.logger.debug("Keeping existing proximity timestamp for {}. Server value was: {}"
-            #                  .format(mac, server_proximity_ts))
-            pass
-
-        if server_ts_last_contacted > badge.last_contacted_ts:
-            badge.last_contacted_ts = server_ts_last_contacted
-        else:
-            pass
-
-        if server_ts_last_unsync > badge.last_unsync_ts:
-            badge.last_unsync_ts = server_ts_last_unsync
-        else:
-            pass
-
-        # updates project id and badge id
-        badge.badge_id = server_badge.badge_id
-        badge.project_id = server_badge.project_id
-
     def pull_badges_list(self):
-        # first time we read from server
-        if self._badges is None:
-            server_badges = self._read_badges_list_from_server(retry=True)
-            self._badges = server_badges
-        else:
-            # update list
-            server_badges = self._read_badges_list_from_server(retry=False)
-            for mac in server_badges:
-                if mac not in self._badges:
-                    # new badge
-                    self._badges[mac] = server_badges[mac]
-                else:
-                    # existing badge. Update if needed
-                    # audio
-                    badge = self._badges[mac]
-                    server_badge = server_badges[mac]
-                    self._update_badge_with_server_badge(badge,server_badge)
+        self._badges = self._read_badges_list_from_server(retry=True)
 
     def pull_badge(self, mac):
         """
@@ -168,10 +104,19 @@ class BadgeManagerServer:
         badge = self._badges[mac]
         server_badge = self._read_badge_from_server(badge.key)
         if server_badge is None:
+            # this could happen if the badge is removed from the server in between iterations
             self.logger.warn("Could not find device {} in server, or communication problem".format(badge.key))
+            return False
+        elif server_badge.addr != mac:
+            # this could happen if a badge is reassigned in between iterations
+            # and would result in associating the data from the badge with the wrong user
+            self.logger.warn(
+                    "Badge / Server Mac Address mismatch for badge: {}"
+                    .format(mac))
+            return False
         else:
-            # update timestamps if more recent
-            self._update_badge_with_server_badge(badge, server_badge)
+            self._badges[mac] = server_badge
+            return True
 
     def send_badge(self, mac):
         """
@@ -181,7 +126,7 @@ class BadgeManagerServer:
         """
         try:
             badge = self._badges[mac]
-            data = {            
+            data = {
                 'observed_id': badge.observed_id,
                 'last_audio_ts': badge.last_audio_ts_int,
                 'last_audio_ts_fract': badge.last_audio_ts_fract,
@@ -243,7 +188,7 @@ if __name__ == "__main__":
     logging.basicConfig()
     logger = logging.getLogger('badge_server')
     logger.setLevel(logging.DEBUG)
-    
+
     mgr = BadgeManagerServer(logger=logger)
     mgr.pull_badges_list()
     print(mgr.badges)

@@ -88,47 +88,16 @@ class BeaconManagerServer:
 
         return None
 
-    def _update_beacon_with_server_beacon(self,beacon,server_beacon):
-            """
-            Update the beacon properties from the server's copy
-            :param beacon:
-            :param server_beacon:
-            :return:
-            """
-    
-            # updates project id and badge id
-            beacon.badge_id = server_beacon.badge_id
-            beacon.project_id = server_beacon.project_id
-
     def pull_beacons_list(self):
-        # first time we read from server
-        if self._beacons is None:
-            server_beacons = self._read_beacons_list_from_server(retry=True)
-            self._beacons = server_beacons
-        else:
-            # update list
-            server_beacons = self._read_beacons_list_from_server(retry=False)
-            for mac in server_beacons:
-                if mac not in self._beacons:
-                    # new beacon
-                    self._beacons[mac] = server_beacons[mac]
-                else:
-                    beacon = self._beacons[mac]
-                    server_beacon = server_beacons[mac]
-                    self._update_beacon_with_server_beacon(beacon,server_beacon)
+        self._beacons = self._read_beacons_list_from_server(retry=True)
 
     def pull_beacon(self, mac):
         """
-        Contacts to server (if responding) and updates the given badge data
+        Contacts to server (if responding) and updates the given beacon data
         :param mac:
         :return:
         """
-        beacon = self._beacons[mac]
-        server_beacon = self._read_beacon_from_server(beacon.key)
-        if server_beacon is None:
-            self.logger.warn("Could not find device {} in server, or communication problem".format(beacon.key))
-        else:
-            self._update_beacon_with_server_beacon(beacon, server_beacon)
+        raise NotImplementedError()
 
     def send_beacon(self, mac):
         """

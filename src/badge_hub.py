@@ -240,8 +240,8 @@ def dialogue(bdg, activate_audio, activate_proximity, mode="server"):
 
         # update badge object to hold latest timestamps
         last_chunk = bdg.dlg.chunks[-1]
-        logger.debug("Setting last badge audio timestamp to {} {}".format(last_chunk.ts, last_chunk.fract))
         if bdg.is_newer_audio_ts(last_chunk.ts, last_chunk.fract):
+            logger.debug("Setting last badge audio timestamp to {} {}".format(last_chunk.ts, last_chunk.fract))
             bdg.set_audio_ts(last_chunk.ts, last_chunk.fract)
         else:
             logger.debug("Keeping existing timestamp ({}.{}) for {}. Last chunk timestamp was: {}.{}"
@@ -464,14 +464,20 @@ def pull_devices(mgr, mgrb, start_recording):
 
         # now the actual data collection 
         for device in scanned_devices:
-            b = mgr.badges.get(device['mac'])
             # try to update latest badge timestamps from the server 
-            mgr.pull_badge(b.addr)
+            mac = device['mac']
+            pull_success = mgr.pull_badge(mac)
+            if not pull_success:
+                logger.warn("""Problem pulling badge from server\n
+                            Skipping badge with mac {} until next full badge list refresh"""
+                            .format(mac))
+                continue
+            b = mgr.badges.get(mac)
             # pull data
             dialogue(b, activate_audio, activate_proximity, mode)
-                        
+
             # update timestamps on server
-            mgr.send_badge(device['mac'])
+            mgr.send_badge(mac)
 
             time.sleep(2)  # requires sleep between devices
 
@@ -495,7 +501,7 @@ def pull_devices(mgr, mgrb, start_recording):
                                  .format(bcn.observed_id,observed_project_id,bcn.badge_id,bcn.project_id))
 
             bcn.last_seen_ts = time.time()
-                       
+
             mgrb.send_beacon(device['mac'])
 
         # Update beacons with wrong id or project id

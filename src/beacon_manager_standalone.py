@@ -43,10 +43,10 @@ class BeaconManagerStandalone():
             devices = []
 
             for line in devices_macs:
-                    if not line.lstrip().startswith('#'):
-                        device_details = line.split()
-                        devices.append(device_details[0])
-                        badge_project_ids.append(device_details[1:3])
+                if not line.lstrip().startswith('#'):
+                    device_details = line.split()
+                    devices.append(device_details[0])
+                    badge_project_ids.append(device_details[1:3])
                     
         
         #mapping badge id and project id to mac address
@@ -68,18 +68,9 @@ class BeaconManagerStandalone():
         return beacons
 
     def pull_beacons_list(self):
-        # first time we read as is
-        if self._beacons is None:
+        if not self._beacons:
             file_beacons = self._read_file(self._device_file)
             self._beacons = file_beacons
-        else:
-            # update list
-            file_beacons = self._read_file(self._device_file)
-            for mac in file_beacons:
-                if mac not in self._beacons:
-                    # new badge
-                    self.logger.debug("Found new badge in file: {}".format(mac))
-                    self._beacons[mac] = file_beacons[mac]
 
     def pull_beacon(self, mac):
         """
@@ -87,7 +78,7 @@ class BeaconManagerStandalone():
         :param mac:
         :return:
         """
-        pass # not implemented
+        raise NotImplementedError()
 
     def send_beacon(self, mac):
         """
