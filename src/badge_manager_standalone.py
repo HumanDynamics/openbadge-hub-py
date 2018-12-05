@@ -71,26 +71,18 @@ class BadgeManagerStandalone():
         return badges
 
     def pull_badges_list(self):
-        # first time we read as is
-        if self._badges is None:
+        if not self._badges:
             file_badges = self._read_file(self._device_file)
             self._badges = file_badges
-        else:
-            # update list
-            file_badges = self._read_file(self._device_file)
-            for mac in file_badges:
-                if mac not in self._badges:
-                    # new badge
-                    self.logger.debug("Found new badge in file: {}".format(mac))
-                    self._badges[mac] = file_badges[mac]
 
     def pull_badge(self, mac):
         """
         Contacts to server (if responding) and updates the given badge data
         :param mac:
-        :return:
+        :return success?:
         """
-        pass # not implemented
+        # Return success so it doesn't break everything else
+        return True
 
     def send_badge(self, mac):
         """
