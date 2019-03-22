@@ -58,59 +58,7 @@ docker-compose -f dev_ubuntu.yml run --entrypoint /bin/bash openbadge-hub-py
 For deployment, we are going to assume Raspberry Pi as a platform. The following sections explain how to setup the
 raspberry pi, and then how run the hub code using Docker.
 
-## Setting up Raspberry Pi (with Hypriot)
-(Might not work well with Raspberry Pi Zero W. Bluetooth has issues)
-For convenience, we will be using HypriotOS instead of Raspbian. It is easier to configure, and comes with docker
-pre-installed.
-
-Download the latest HypriotOS - https://blog.hypriot.com/downloads/ . To make things easy, you should download a version
-that matches the Docker you are running on your own machine.
-
-The default username and password for Hypriot are pirate/hypriot (instead of pi/raspberry)
-
-Next, you need to flash the image to a SD card. We will use the flash tool (developed by Hypriot). It supports Mac and
-Linux. Download and install it:
-```
-curl -O https://raw.githubusercontent.com/hypriot/flash/master/$(uname -s)/flash
-chmod +x flash
-sudo mv flash /usr/local/bin/flash
-```
-
-If it's not working, please follow the more detailed explaination here -
-https://github.com/hypriot/flash/blob/master/README.md
-
-Now we use flash to write the image to your SD card. If you are using Ubuntu, the SD card will likely be /dev/mmcblk0.
-If you are not sure, you can omit the --device flash, and it will show you a list of devices. Also, note that we are
-setting the hostname of the machine using this command
-```
-flash --device /dev/mmcblk0 --hostname badgepi-xx hypriotos-rpi-v1.4.0.img
-```
-
-Note - the flash tool also provides an easy way to setup your wifi. You can read more about it here -
-https://github.com/hypriot/flash/blob/master/README.md
-
-After the flash util is done, place the SD card in your raspberry pi and power it up.
-
-Copy your SSH public key to the raspberry pi. If you don't have a public one, follow these instructions
-https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#generating-a-new-ssh-key
-```
-ssh-copy-id -oStrictHostKeyChecking=no -oCheckHostIP=no pirate@badgepi-xx
-```
-
-Run the following command to change the id of the operating system (this is required for docker-machine):
-```
-ssh pirate@badgepi-xx sudo sed -i \'s/ID=raspbian/ID=debian/g\' /etc/os-release
-```
-
-Connect to raspberry pi, and run the following commands:
-* ssh pirate@badgepi-xx
-* change your password using passwd
-* change the timezone using sudo dpkg-reconfigure tzdata
-* DO NOT RUN update & upgrade before installting docker. It causes issues (sudo apt-get update && sudo apt-get upgrade -y)
-
-Double check that your hubs sync their time with a NTP server. Unsync clocks will lead to data corruption and loss
-
-## Setting up Raspberry Pi using Raspian (For Raspberry Pi Zero W)
+## Setting up Raspberry Pi using Raspian
 It seems that Hypriot has some issues with Pi Zero W (Bluetooth won't start). Therefore, it's better to use Raspbian
 until they fix the problem.
 
@@ -130,6 +78,7 @@ Now, we'll need to turn on SSH and change the hostname. We'll do that by alterin
 * Create a file call "ssh" under the boot partition
 * Edit /etc/hostname in the main partition and replace "raspberrypi" with your hostname
 * Unmonut both partitions
+* If you need wifi, you can look here for instructions on how to set it up https://wiki.brewpi.com/getting-started/raspberry-pi-docker-install#install-raspbian
 
 Place the SD card in your raspberry pi and power it up.
 
