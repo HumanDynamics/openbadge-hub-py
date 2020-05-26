@@ -1,6 +1,6 @@
 # Based on - https://github.com/don41382/docker-rpi-python3-with-bluetooth
 # Pull base image
-FROM ubuntu
+FROM ubuntu:18.04
 MAINTAINER Oren Lederman orenled@mit.edu
 
 # Install dependencies
